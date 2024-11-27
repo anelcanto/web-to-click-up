@@ -9,9 +9,10 @@
             padding: 10px;
             width: 200px;
         }
-        button {
+        input, button {
             width: 100%;
             padding: 10px;
+            margin-bottom: 10px;
             font-size: 16px;
         }
         a {
@@ -25,7 +26,10 @@
 </head>
 <body>
     <h3>Create Task</h3>
-    <button id="createTaskButton">Create Task from Clipboard</button>
+    <input type="text" id="nameField" placeholder="Enter Name" aria-label="Name">
+    <input type="email" id="emailField" placeholder="Email from Clipboard" aria-label="Email">
+    <button id="fillEmailButton">Fill Email from Clipboard</button>
+    <button id="createTaskButton">Create Task</button>
     <p id="status"></p>
     <hr>
     <a href="#" id="openSettings">Settings</a>

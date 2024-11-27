@@ -1,6 +1,7 @@
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === "createTask") {
         const taskName = message.taskName;
+        const taskEmail = message.taskEmail; // Email from the popup
 
         // Retrieve API token and list ID from Chrome storage
         chrome.storage.sync.get(['apiToken', 'listId'], function (items) {
@@ -13,6 +14,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 return;
             }
 
+            // Construct the payload
+            const taskPayload = {
+                name: taskName,
+                custom_fields: [
+                    {
+                        id: "575825bb-27c6-4f36-91f3-7d3f6f665c42", // The ID of the custom field for Email
+                        value: taskEmail
+                    }
+                ]
+            };
+
             // Make the fetch request using the retrieved API token and list ID
             fetch(`https://api.clickup.com/api/v2/list/${listId}/task`, {
                 method: "POST",
@@ -20,7 +32,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                     "Authorization": apiToken,
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify({ name: taskName })
+                body: JSON.stringify(taskPayload)
             })
                 .then(response => response.json())
                 .then(data => {
