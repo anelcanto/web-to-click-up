@@ -1,0 +1,36 @@
+{
+    "manifest_version": 3,
+    "name": "Clipboard to ClickUp Task",
+    "version": "1.1",
+    "description": "Create a ClickUp task using the text from your clipboard.",
+    "permissions": [
+        "clipboardRead",
+        "scripting",
+        "activeTab"
+    ],
+    "host_permissions": [
+        "https://api.clickup.com/*",
+        "https://www.dice.com/*"
+    ],
+    "background": {
+        "service_worker": "background.js"
+    },
+    "action": {
+        "default_popup": "popup.html",
+        "default_icon": {
+            "16": "icon.png",
+            "48": "icon.png",
+            "128": "icon.png"
+        }
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "https://www.dice.com/*"
+            ],
+            "js": [
+                "content.js"
+            ]
+        }
+    ]
+}
