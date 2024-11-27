@@ -1,3 +1,13 @@
+
+
+chrome.runtime.onMessage.addListener((message) => {
+    if (message.action === "openPopup") {
+        // Logic to ensure the popup becomes visible
+        // If it's part of the action system, it will already load the popup.html
+        console.log("Popup command triggered");
+    }
+});
+
 document.getElementById("createTaskButton").addEventListener("click", () => {
     const status = document.getElementById("status");
     const name = document.getElementById("nameField").value;
