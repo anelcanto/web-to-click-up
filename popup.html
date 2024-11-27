@@ -7,7 +7,7 @@
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 10px;
-            width: 380px; /* Adjusted width */
+            width: 380px;
         }
         input, button {
             width: 100%;
@@ -21,20 +21,58 @@
             text-align: center;
             text-decoration: none;
             color: #007bff;
+            cursor: pointer;
+        }
+        /* Hide the settings view by default */
+        #settingsView {
+            display: none;
+        }
+        /* Add styles for labels and input containers */
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .input-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+
+        }
+        .input-container input {
+            flex-grow: 1;
         }
     </style>
 </head>
 <body>
-    <h3>Create Task</h3>
-    <form id="taskForm">
-        <input type="text" id="nameField" placeholder="Enter Name" aria-label="Name" autofocus>
-        <input type="email" id="emailField" placeholder="Email" aria-label="Email">
-        <!-- <button id="fillEmailButton">Fill Email from Clipboard</button> -->
-        <button id="createTaskButton" type="submit">Create Task</button>
-    </form>
-    <p id="status"></p>
-    <hr>
-    <a href="#" id="openSettings">Settings</a>
+    <!-- Create Task View -->
+    <div id="createTaskView">
+        <h3>Create Task</h3>
+        <form id="taskForm">
+            <input type="text" id="nameField" placeholder="Enter Name" aria-label="Name" autofocus>
+            <input type="email" id="emailField" placeholder="Email" aria-label="Email">
+            <button id="createTaskButton" type="submit">Create Task</button>
+        </form>
+        <p id="status"></p>
+        <hr>
+        <a id="openSettings">Settings</a>
+    </div>
+
+    <!-- Settings View -->
+    <div id="settingsView">
+        <h3>Settings</h3>
+        <div class="input-container">
+            <label for="apiToken">API Token:</label>
+            <input type="password" id="apiToken" placeholder="Enter your API token" aria-label="API Token">
+            <button id="toggleApiTokenVisibility" aria-label="Toggle API Token Visibility">Show</button>
+        </div>
+        <label for="listId">List ID:</label>
+        <input type="text" id="listId" placeholder="Enter your List ID" aria-label="List ID">
+        <button id="saveSettingsButton">Save Settings</button>
+        <p id="settingsStatus"></p>
+        <hr>
+        <a id="backToTask">Back to Create Task</a>
+    </div>
+
     <script src="popup.js"></script>
 </body>
 </html>
