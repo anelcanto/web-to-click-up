@@ -10,15 +10,25 @@ document.getElementById("createTaskButton").addEventListener("click", () => {
 
     status.textContent = "Creating task...";
 
-    // Send message to the background script
-    chrome.runtime.sendMessage(
-        { action: "createTask", taskName: name, taskEmail: email },
-        (response) => {
-            if (response.success) {
-                status.textContent = "Task created successfully!";
-            } else {
-                status.textContent = `Error: ${response.error}`;
+    // Get the current tab's URL
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        const currentUrl = tabs[0]?.url || "No URL available";
+
+        // Send message to the background script
+        chrome.runtime.sendMessage(
+            {
+                action: "createTask",
+                taskName: name,
+                taskEmail: email,
+                taskUrl: currentUrl, // Include the current URL
+            },
+            (response) => {
+                if (response.success) {
+                    status.textContent = "Task created successfully!";
+                } else {
+                    status.textContent = `Error: ${response.error}`;
+                }
             }
-        }
-    );
+        );
+    });
 });
