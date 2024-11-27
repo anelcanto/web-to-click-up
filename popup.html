@@ -26,9 +26,12 @@
 </head>
 <body>
     <h3>Create Task</h3>
-    <input type="text" id="nameField" placeholder="Enter Name" aria-label="Name" autofocus>
-    <input type="email" id="emailField" placeholder="Email" aria-label="Email">    <!-- <button id="fillEmailButton">Fill Email from Clipboard</button> -->
-    <button id="createTaskButton">Create Task</button>
+    <form id="taskForm">
+        <input type="text" id="nameField" placeholder="Enter Name" aria-label="Name" autofocus>
+        <input type="email" id="emailField" placeholder="Email" aria-label="Email">
+        <!-- <button id="fillEmailButton">Fill Email from Clipboard</button> -->
+        <button id="createTaskButton" type="submit">Create Task</button>
+    </form>
     <p id="status"></p>
     <hr>
     <a href="#" id="openSettings">Settings</a>
