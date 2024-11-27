@@ -2,7 +2,7 @@
     "manifest_version": 3,
     "name": "Clipboard to ClickUp Task",
     "version": "1.1",
-    "description": "Create a ClickUp task using the text from your clipboard.",
+    "description": "Create a ClickUp task from a Dice candidate",
     "permissions": [
         "clipboardRead",
         "scripting",
