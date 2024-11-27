@@ -4,14 +4,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const taskEmail = message.taskEmail;
         const taskUrl = message.taskUrl; // URL from the popup
 
-        // Retrieve API token and list ID from Chrome storage
-        chrome.storage.sync.get(['apiToken', 'listId'], function (items) {
+        // Retrieve API token, list ID, and custom field IDs from Chrome storage
+        chrome.storage.sync.get(['apiToken', 'listId', 'customFieldIdEmail', 'customFieldIdUrl'], function (items) {
             const apiToken = items.apiToken;
             const listId = items.listId;
+            const customFieldIdEmail = items.customFieldIdEmail;
+            const customFieldIdUrl = items.customFieldIdUrl;
 
-            // Check if API token or list ID is missing
-            if (!apiToken || !listId) {
-                sendResponse({ success: false, error: 'API token or List ID not set.' });
+            // Check if any required settings are missing
+            if (!apiToken || !listId || !customFieldIdEmail || !customFieldIdUrl) {
+                sendResponse({ success: false, error: 'API token, List ID, or Custom Field IDs not set.' });
                 return;
             }
 
@@ -20,11 +22,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 name: taskName,
                 custom_fields: [
                     {
-                        id: "575825bb-27c6-4f36-91f3-7d3f6f665c42", // Custom field ID for Email
+                        id: customFieldIdEmail, // Use the custom field ID from settings
                         value: taskEmail
                     },
                     {
-                        id: "f574a621-12f3-46e0-a039-65708aff14eb", // Custom field ID for Dice profile
+                        id: customFieldIdUrl, // Use the custom field ID from settings
                         value: taskUrl
                     }
                 ]

@@ -11,28 +11,36 @@ document.getElementById("taskForm").addEventListener("submit", (event) => {
         return;
     }
 
-    status.textContent = "Creating task...";
+    // Check if custom field IDs are set
+    chrome.storage.sync.get(['customFieldIdEmail', 'customFieldIdUrl'], function (items) {
+        if (!items.customFieldIdEmail || !items.customFieldIdUrl) {
+            status.textContent = "Custom Field IDs are not set in settings.";
+            return;
+        }
 
-    // Get the current tab's URL
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        const currentUrl = tabs[0]?.url || "No URL available";
+        status.textContent = "Creating task...";
 
-        // Send message to the background script
-        chrome.runtime.sendMessage(
-            {
-                action: "createTask",
-                taskName: name,
-                taskEmail: email,
-                taskUrl: currentUrl,
-            },
-            (response) => {
-                if (response.success) {
-                    status.textContent = "Task created successfully!";
-                } else {
-                    status.textContent = `Error: ${response.error}`;
+        // Get the current tab's URL
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            const currentUrl = tabs[0]?.url || "No URL available";
+
+            // Send message to the background script
+            chrome.runtime.sendMessage(
+                {
+                    action: "createTask",
+                    taskName: name,
+                    taskEmail: email,
+                    taskUrl: currentUrl,
+                },
+                (response) => {
+                    if (response.success) {
+                        status.textContent = "Task created successfully!";
+                    } else {
+                        status.textContent = `Error: ${response.error}`;
+                    }
                 }
-            }
-        );
+            );
+        });
     });
 });
 
@@ -52,8 +60,10 @@ document.getElementById("backToTask").addEventListener("click", () => {
 document.getElementById('saveSettingsButton').addEventListener('click', function () {
     const apiToken = document.getElementById('apiToken').value;
     const listId = document.getElementById('listId').value;
+    const customFieldIdEmail = document.getElementById('customFieldIdEmail').value;
+    const customFieldIdUrl = document.getElementById('customFieldIdUrl').value;
 
-    chrome.storage.sync.set({ apiToken, listId }, function () {
+    chrome.storage.sync.set({ apiToken, listId, customFieldIdEmail, customFieldIdUrl }, function () {
         const status = document.getElementById('settingsStatus');
         status.textContent = 'Settings saved.';
         setTimeout(() => { status.textContent = ''; }, 1500);
@@ -62,9 +72,11 @@ document.getElementById('saveSettingsButton').addEventListener('click', function
 
 // Load settings when opening the settings view
 function loadSettings() {
-    chrome.storage.sync.get(['apiToken', 'listId'], function (items) {
+    chrome.storage.sync.get(['apiToken', 'listId', 'customFieldIdEmail', 'customFieldIdUrl'], function (items) {
         if (items.apiToken) document.getElementById('apiToken').value = items.apiToken;
         if (items.listId) document.getElementById('listId').value = items.listId;
+        if (items.customFieldIdEmail) document.getElementById('customFieldIdEmail').value = items.customFieldIdEmail;
+        if (items.customFieldIdUrl) document.getElementById('customFieldIdUrl').value = items.customFieldIdUrl;
     });
 }
 
