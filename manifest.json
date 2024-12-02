@@ -4,7 +4,6 @@
     "version": "1.0",
     "description": "THIS EXTENSION IS FOR BETA TESTING. Create a ClickUp task from a Dice candidate",
     "permissions": [
-        "clipboardRead",
         "activeTab",
         "storage"
     ],
