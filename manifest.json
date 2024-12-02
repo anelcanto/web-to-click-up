@@ -12,22 +12,15 @@
         "https://api.clickup.com/*",
         "https://www.dice.com/*"
     ],
+    "action": {
+        "default_title": "Click to open panel"
+    },
     "background": {
         "service_worker": "background.js"
     },
     "side_panel": {
         "default_path": "sidepanel.html"
     },
-    "content_scripts": [
-        {
-            "matches": [
-                "https://www.dice.com/*"
-            ],
-            "js": [
-                "content.js"
-            ]
-        }
-    ],
     "commands": {
         "_execute_action": {
             "suggested_key": {
