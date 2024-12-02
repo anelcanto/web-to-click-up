@@ -35,6 +35,8 @@ document.getElementById("taskForm").addEventListener("submit", (event) => {
                 (response) => {
                     if (response.success) {
                         status.textContent = "Task created successfully!";
+                        nameField.value = "";
+                        emailField.value = "";
                     } else {
                         status.textContent = `Error: ${response.error}`;
                     }
@@ -56,19 +58,19 @@ document.getElementById("backToTask").addEventListener("click", () => {
     document.getElementById("createTaskView").style.display = "block";
 });
 
-// Save settings when the button is clicked
-document.getElementById('saveSettingsButton').addEventListener('click', function () {
-    const apiToken = document.getElementById('apiToken').value;
-    const listId = document.getElementById('listId').value;
-    const customFieldIdEmail = document.getElementById('customFieldIdEmail').value;
-    const customFieldIdUrl = document.getElementById('customFieldIdUrl').value;
+// // Save settings when the button is clicked
+// document.getElementById('saveSettingsButton').addEventListener('click', function () {
+//     const apiToken = document.getElementById('apiToken').value;
+//     const listId = document.getElementById('listId').value;
+//     const customFieldIdEmail = document.getElementById('customFieldIdEmail').value;
+//     const customFieldIdUrl = document.getElementById('customFieldIdUrl').value;
 
-    chrome.storage.sync.set({ apiToken, listId, customFieldIdEmail, customFieldIdUrl }, function () {
-        const status = document.getElementById('settingsStatus');
-        status.textContent = 'Settings saved.';
-        setTimeout(() => { status.textContent = ''; }, 1500);
-    });
-});
+//     chrome.storage.sync.set({ apiToken, listId, customFieldIdEmail, customFieldIdUrl }, function () {
+//         const status = document.getElementById('settingsStatus');
+//         status.textContent = 'Settings saved.';
+//         setTimeout(() => { status.textContent = ''; }, 1500);
+//     });
+// });
 
 // Load settings when opening the settings view
 function loadSettings() {
@@ -78,6 +80,8 @@ function loadSettings() {
         if (items.customFieldIdEmail) document.getElementById('customFieldIdEmail').value = items.customFieldIdEmail;
         if (items.customFieldIdUrl) document.getElementById('customFieldIdUrl').value = items.customFieldIdUrl;
     });
+
+
 }
 
 // Toggle visibility of the API token
