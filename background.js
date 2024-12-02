@@ -2,7 +2,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === "createTask") {
         const taskName = message.taskName;
         const taskEmail = message.taskEmail;
-        const taskUrl = message.taskUrl; // URL from the popup
+        const taskUrl = message.taskUrl;
 
         // Retrieve API token, list ID, and custom field IDs from Chrome storage
         chrome.storage.sync.get(['apiToken', 'listId', 'customFieldIdEmail', 'customFieldIdUrl'], function (items) {
@@ -22,11 +22,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 name: taskName,
                 custom_fields: [
                     {
-                        id: customFieldIdEmail, // Use the custom field ID from settings
+                        id: customFieldIdEmail,
                         value: taskEmail
                     },
                     {
-                        id: customFieldIdUrl, // Use the custom field ID from settings
+                        id: customFieldIdUrl,
                         value: taskUrl
                     }
                 ]
@@ -41,7 +41,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 },
                 body: JSON.stringify(taskPayload)
             })
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        // Extract error message from the response
+                        return response.json().then(errorData => {
+                            throw new Error(errorData.err || 'Unknown error occurred');
+                        });
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     sendResponse({ success: true, data });
                 })
