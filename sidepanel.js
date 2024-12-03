@@ -58,19 +58,19 @@ document.getElementById("backToTask").addEventListener("click", () => {
     document.getElementById("createTaskView").style.display = "block";
 });
 
-// // Save settings when the button is clicked
-// document.getElementById('saveSettingsButton').addEventListener('click', function () {
-//     const apiToken = document.getElementById('apiToken').value;
-//     const listId = document.getElementById('listId').value;
-//     const customFieldIdEmail = document.getElementById('customFieldIdEmail').value;
-//     const customFieldIdUrl = document.getElementById('customFieldIdUrl').value;
+// Save settings when the button is clicked
+document.getElementById('saveSettingsButton').addEventListener('click', function () {
+    const apiToken = document.getElementById('apiToken').value;
+    const listId = document.getElementById('listId').value;
+    const customFieldIdEmail = document.getElementById('customFieldIdEmail').value;
+    const customFieldIdUrl = document.getElementById('customFieldIdUrl').value;
 
-//     chrome.storage.sync.set({ apiToken, listId, customFieldIdEmail, customFieldIdUrl }, function () {
-//         const status = document.getElementById('settingsStatus');
-//         status.textContent = 'Settings saved.';
-//         setTimeout(() => { status.textContent = ''; }, 1500);
-//     });
-// });
+    chrome.storage.sync.set({ apiToken, listId, customFieldIdEmail, customFieldIdUrl }, function () {
+        const status = document.getElementById('settingsStatus');
+        status.textContent = 'Settings saved.';
+        setTimeout(() => { status.textContent = ''; }, 1500);
+    });
+});
 
 // Load settings when opening the settings view
 function loadSettings() {
