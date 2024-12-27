@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "Web-to-Click Up! BETA",
-    "version": "1.2",
+    "version": "1.3",
     "description": "THIS EXTENSION IS FOR BETA TESTING. Create a ClickUp task from a Dice candidate",
     "permissions": [
         "activeTab",
@@ -19,7 +19,7 @@
         "service_worker": "background.js"
     },
     "side_panel": {
-        "default_path": "sidepanel.html"
+        "default_path": "index.html"
     },
     "commands": {
         "_execute_action": {
