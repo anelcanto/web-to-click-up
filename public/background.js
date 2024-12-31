@@ -2,66 +2,40 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === "createTask") {
         const taskName = message.taskName;
         const taskEmail = message.taskEmail;
-        const taskUrl = message.taskUrl;
+        // const taskUrl = message.taskUrl; // commented out
 
-        // Retrieve API token, list ID, and custom field IDs from Chrome storage
-        chrome.storage.sync.get(['apiToken', 'listId', 'customFieldIdEmail', 'customFieldIdUrl'], function (items) {
-            const apiToken = items.apiToken;
-            const listId = items.listId;
-            const customFieldIdEmail = items.customFieldIdEmail;
-            const customFieldIdUrl = items.customFieldIdUrl;
+        chrome.storage.sync.get(
+            ['apiToken', 'selectedList', 'fieldMappings'],
+            function (items) {
+                const taskPayload = {
+                    name: taskName,
+                    custom_fields: [],
+                };
 
-            // Check if any required settings are missing
-            if (!apiToken || !listId || !customFieldIdEmail || !customFieldIdUrl) {
-                sendResponse({ success: false, error: 'API token, List ID, or Custom Field IDs not set.' });
-                return;
-            }
+                if (items.fieldMappings && typeof items.fieldMappings === 'object') {
+                    const emailFieldId = items.fieldMappings["Email Field"];
+                    // const urlFieldId = items.fieldMappings["URL Field"];
 
-            // Construct the payload
-            const taskPayload = {
-                name: taskName,
-                custom_fields: [
-                    {
-                        id: customFieldIdEmail,
-                        value: taskEmail
-                    },
-                    {
-                        id: customFieldIdUrl,
-                        value: taskUrl
-                    }
-                ]
-            };
-
-            // Make the fetch request using the retrieved API token and list ID
-            fetch(`https://api.clickup.com/api/v2/list/${listId}/task`, {
-                method: "POST",
-                headers: {
-                    "Authorization": apiToken,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(taskPayload)
-            })
-                .then(response => {
-                    if (!response.ok) {
-                        // Extract error message from the response
-                        return response.json().then(errorData => {
-                            throw new Error(errorData.err || 'Unknown error occurred');
+                    if (emailFieldId) {
+                        taskPayload.custom_fields.push({
+                            id: emailFieldId,
+                            value: taskEmail,
                         });
                     }
-                    return response.json();
-                })
-                .then(data => {
-                    sendResponse({ success: true, data });
-                })
-                .catch(error => {
-                    console.error("Error creating ClickUp task:", error);
-                    sendResponse({ success: false, error: error.message });
-                });
-        });
 
+                    // if (urlFieldId) {
+                    //   taskPayload.custom_fields.push({
+                    //     id: urlFieldId,
+                    //     value: taskUrl,
+                    //   });
+                    // }
+                }
 
+                // POST to ClickUp ...
+            }
+        );
 
-        return true; // Keep the message channel open for async response
+        return true;
     }
 });
 

@@ -17,42 +17,38 @@ export default function CreateTask({ onGoToSettings }: CreateTaskProps) {
             return
         }
 
-        // Check if custom field IDs are set
-        window.chrome?.storage?.sync.get(
-            ['customFieldIdEmail', 'customFieldIdUrl'],
-            (items: any) => {
-                if (!items.customFieldIdEmail || !items.customFieldIdUrl) {
-                    setStatusMsg('Custom Field IDs are not set in settings.')
-                    return
-                }
-
-                setStatusMsg('Creating task...')
-
-                // Get the current tab's URL
-                window.chrome?.tabs.query({ active: true, currentWindow: true }, (tabs: any) => {
-                    const currentUrl = tabs[0]?.url || 'No URL available'
-
-                    // Send message to background
-                    window.chrome?.runtime.sendMessage(
-                        {
-                            action: 'createTask',
-                            taskName: name,
-                            taskEmail: email,
-                            taskUrl: currentUrl,
-                        },
-                        (response: any) => {
-                            if (response?.success) {
-                                setStatusMsg('Task created successfully!')
-                                setName('')
-                                setEmail('')
-                            } else {
-                                setStatusMsg(`Error: ${response?.error || 'Unknown error'}`)
-                            }
-                        }
-                    )
-                })
+        // CreateTask.tsx
+        window.chrome?.storage?.sync.get(['customFieldIdEmail'], (items: any) => {
+            if (!items.customFieldIdEmail /* || !items.customFieldIdUrl */) {
+                setStatusMsg('Custom Field IDs are not set in settings.');
+                return;
             }
-        )
+
+            setStatusMsg('Creating task...');
+
+            // Comment out the tab query and any reference to URL
+            // window.chrome?.tabs.query({ active: true, currentWindow: true }, (tabs: any) => {
+            //   const currentUrl = tabs[0]?.url || 'No URL available';
+
+            window.chrome?.runtime.sendMessage(
+                {
+                    action: 'createTask',
+                    taskName: name,
+                    taskEmail: email,
+                    // taskUrl: currentUrl, // commented out
+                },
+                (response: any) => {
+                    if (response?.success) {
+                        setStatusMsg('Task created successfully!');
+                        setName('');
+                        setEmail('');
+                    } else {
+                        setStatusMsg(`Error: ${response?.error || 'Unknown error'}`);
+                    }
+                }
+            );
+            // });
+        });
     }
 
     return (

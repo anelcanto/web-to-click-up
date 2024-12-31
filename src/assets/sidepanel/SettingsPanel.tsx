@@ -1,53 +1,238 @@
-import { useEffect, useState } from 'react'
+/* eslint no-unused-vars: "off" */
 
-interface Settings {
-    apiToken?: string
-    listId?: string
-    customFieldIdEmail?: string
-    customFieldIdUrl?: string
-}
+import { useEffect, useState } from 'react'
 
 interface SettingsPanelProps {
     onGoToCreateTask: () => void
 }
 
 export default function SettingsPanel({ onGoToCreateTask }: SettingsPanelProps) {
-    const [settings, setSettings] = useState<Settings>({})
-    const [apiTokenVisible, setApiTokenVisible] = useState(false)
-    const [settingsStatus, setSettingsStatus] = useState('')
+    interface Settings {
+        // Basic
+        apiToken?: string;
+
+        // Selected Entities
+        selectedTeam?: string;
+        selectedSpace?: string;
+        selectedFolder?: string | null;
+        selectedList?: string;
+
+        // Custom Field Mappings
+        // This could be: { "UserLabel1": "clickUpFieldId1", "UserLabel2": "clickUpFieldId2" }
+        fieldMappings?: Record<string, string>;
+    }
+    interface Team {
+        id: string;
+        name: string;
+    }
+    interface Space {
+        id: string;
+        name: string;
+    }
+    interface Folder {
+        id: string;
+        name: string;
+    }
+    interface List {
+        id: string;
+        name: string;
+    }
+    interface CustomField {
+        id: string;
+        name: string;
+    }
+
+    // UI Data
+    const [teams, setTeams] = useState<Team[]>([]);
+    const [spaces, setSpaces] = useState<Space[]>([]);
+    const [folders, setFolders] = useState<Folder[]>([]);
+    const [lists, setLists] = useState<List[]>([]);
+    const [availableFields, setAvailableFields] = useState<CustomField[]>([]);
+
+    // Combined Settings
+    const [settings, setSettings] = useState<Settings>({
+        apiToken: '',
+        selectedTeam: '',
+        selectedSpace: '',
+        selectedFolder: null,
+        selectedList: '',
+        fieldMappings: {},
+    });
+
+    // UI states
+    const [apiTokenVisible, setApiTokenVisible] = useState(false);
+    const [settingsStatus, setSettingsStatus] = useState('');
 
     useEffect(() => {
         loadSettings()
     }, [])
 
-    const loadSettings = () => {
-        window.chrome?.storage?.sync.get(
-            ['apiToken', 'listId', 'customFieldIdEmail', 'customFieldIdUrl'],
-            (items: any) => {
-                setSettings({
-                    apiToken: items.apiToken || '',
-                    listId: items.listId || '',
-                    customFieldIdEmail: items.customFieldIdEmail || '',
-                    customFieldIdUrl: items.customFieldIdUrl || '',
-                })
-            }
-        )
+    useEffect(() => {
+        if (settings.apiToken) {
+            fetchTeams();
+        }
+    }, [settings.apiToken]);
+
+    useEffect(() => {
+        if (teams.length > 0 && settings.selectedTeam) {
+            handleSelectTeam(settings.selectedTeam);
+        }
+    }, [teams]);
+
+    // Once spaces are loaded, if there's a saved selectedSpace, fetch folders and folderless lists
+    useEffect(() => {
+        if (spaces.length > 0 && settings.selectedSpace) {
+            handleSelectSpace(settings.selectedSpace);
+        }
+    }, [spaces]);
+
+    // Once folders are loaded, if there's a saved selectedFolder, fetch the lists in that folder
+    useEffect(() => {
+        if (folders.length > 0 && settings.selectedFolder) {
+            handleSelectFolder(settings.selectedFolder);
+        }
+    }, [folders]);
+
+    // Once lists are loaded, if there's a saved selectedList, fetch the custom fields for that list
+    useEffect(() => {
+        if (lists.length > 0 && settings.selectedList) {
+            handleSelectList(settings.selectedList);
+        }
+    }, [lists]);
+
+
+
+
+    // Handle Selecting Team → fetch Spaces
+    function handleSelectTeam(teamId: string) {
+        setSettings(prev => ({ ...prev, selectedTeam: teamId }));
+        fetch(`https://api.clickup.com/api/v2/team/${teamId}/space`, {
+            headers: { Authorization: settings.apiToken || '' },
+        })
+            .then(res => res.json())
+            .then(data => setSpaces(data.spaces || []))
+            .catch(err => console.error(err));
     }
 
-    const saveSettings = () => {
-        window.chrome?.storage?.sync.set(
+    // Handle Selecting Space → fetch Folders + Folderless Lists
+    function handleSelectSpace(spaceId: string) {
+        setSettings((prev) => {
+            // If user is actually changing the space, reset folder+list
+            if (prev.selectedSpace !== spaceId) {
+                return { ...prev, selectedSpace: spaceId, selectedFolder: null, selectedList: '' };
+            } else {
+                // same space as before—don’t wipe out the folder/list
+                // specify that the listId is the same as before
+                return { ...prev, selectedSpace: spaceId };
+            }
+        });
+
+        // 1. Fetch folders in the chosen space
+        fetch(`https://api.clickup.com/api/v2/space/${spaceId}/folder?archived=false`, {
+            headers: { Authorization: settings.apiToken || '' },
+        })
+            .then((res) => res.json())
+            .then((data) => {
+                setFolders(data.folders || []);
+            })
+            .catch((err) => console.error(err));
+
+        // 2. Fetch folderless lists in the chosen space
+        fetch(`https://api.clickup.com/api/v2/space/${spaceId}/list?archived=false`, {
+            headers: { Authorization: settings.apiToken || '' },
+        })
+            .then((res) => res.json())
+            .then((data) => {
+                setLists(data.lists || []);
+            })
+            .catch((err) => console.error(err));
+    }
+
+    // Handle Selecting Folder → fetch Lists
+    function handleSelectFolder(folderId: string) {
+        //
+        setSettings(prev => ({
+            ...prev,
+            selectedFolder: folderId,
+            selectedList: prev.selectedList || '', // Only clear selectedList if it's not already set
+        }));
+        fetch(`https://api.clickup.com/api/v2/folder/${folderId}/list`, {
+            headers: { Authorization: settings.apiToken || '' },
+        })
+            .then(res => res.json())
+            .then(data => setLists(data.lists || []))
+            .catch(err => console.error(err));
+    }
+
+    // Handle Selecting List → fetch Custom Fields
+    function handleSelectList(listId: string) {
+        setSettings(prev => ({ ...prev, selectedList: listId }));
+        fetch(`https://api.clickup.com/api/v2/list/${listId}/field`, {
+            headers: { Authorization: settings.apiToken || '' },
+        })
+            .then(res => res.json())
+            .then(data => setAvailableFields(data.fields || []))
+            .catch(err => console.error(err));
+    }
+
+
+    // Handle Field Mapping
+    function handleFieldMappingChange(fieldId: string, customLabel: string) {
+        setSettings(prev => ({
+            ...prev,
+            fieldMappings: {
+                ...prev.fieldMappings,
+                [customLabel]: fieldId,
+            },
+        }));
+    }
+    function loadSettings() {
+        chrome.storage.sync.get(
+            ['apiToken', 'selectedTeam', 'selectedSpace', 'selectedFolder', 'selectedList', 'fieldMappings'],
+            (items) => {
+                setSettings({
+                    apiToken: items.apiToken || '',
+                    selectedTeam: items.selectedTeam || '',
+                    selectedSpace: items.selectedSpace || '',
+                    selectedFolder: items.selectedFolder ?? null,
+                    selectedList: items.selectedList || '',  // Must also be here
+                    fieldMappings: items.fieldMappings || {},
+                });
+            }
+        );
+    }
+
+    function saveSettings() {
+        chrome.storage.sync.set(
             {
                 apiToken: settings.apiToken,
-                listId: settings.listId,
-                customFieldIdEmail: settings.customFieldIdEmail,
-                customFieldIdUrl: settings.customFieldIdUrl,
+                selectedTeam: settings.selectedTeam,
+                selectedSpace: settings.selectedSpace,
+                selectedFolder: settings.selectedFolder,
+                selectedList: settings.selectedList,       // Must be here!
+                fieldMappings: settings.fieldMappings,
             },
             () => {
-                setSettingsStatus('Settings saved.')
-                setTimeout(() => setSettingsStatus(''), 1500)
+                setSettingsStatus('Settings saved.');
+                setTimeout(() => setSettingsStatus(''), 1500);
             }
-        )
+        );
     }
+
+    // Fetch Teams
+    function fetchTeams() {
+        fetch('https://api.clickup.com/api/v2/team', {
+            headers: { Authorization: settings.apiToken || '' },
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.teams) {
+                    setTeams(data.teams);
+                }
+            })
+            .catch(err => console.error(err));
+    }
+
 
     const toggleApiTokenVisibility = () => {
         setApiTokenVisible((prev) => !prev)
@@ -57,19 +242,15 @@ export default function SettingsPanel({ onGoToCreateTask }: SettingsPanelProps) 
         <div className="p-4 w-72 font-sans">
             <h3 className="text-lg font-bold mb-4">Settings</h3>
 
-            {/* API Token */}
-            <div className="mb-4">
-                <label htmlFor="apiToken" className="block mb-1 font-medium">
-                    API Token:
-                </label>
+            <div>
+                {/* API Token Field */}
                 <div className="flex items-center space-x-2">
+
                     <input
-                        id="apiToken"
                         type={apiTokenVisible ? 'text' : 'password'}
-                        placeholder="Enter your API token"
-                        value={settings.apiToken ?? ''}
-                        onChange={(e) => setSettings((prev) => ({ ...prev, apiToken: e.target.value }))}
-                        className="flex-1 p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        value={settings.apiToken}
+                        onChange={(e) => setSettings({ ...settings, apiToken: e.target.value })}
+                        placeholder="ClickUp API Key"
                     />
                     <button
                         onClick={toggleApiTokenVisibility}
@@ -79,71 +260,88 @@ export default function SettingsPanel({ onGoToCreateTask }: SettingsPanelProps) 
                         {apiTokenVisible ? 'Hide' : 'Show'}
                     </button>
                 </div>
+
+                {/* Dropdown: Teams */}
+                <select
+                    value={settings.selectedTeam}                // <--- This is crucial
+                    onChange={(e) => handleSelectTeam(e.target.value)}
+                >
+                    <option value="">Select a Workspace...</option>
+                    {teams.map((team) => (
+                        <option key={team.id} value={team.id}>
+                            {team.name}
+                        </option>
+                    ))}
+                </select>
+                {/* Dropdown: Spaces */}
+                <select
+                    value={settings.selectedSpace}
+                    onChange={(e) => handleSelectSpace(e.target.value)}
+                >
+                    <option value="">Select a Space...</option>
+                    {spaces.map((space) => (
+                        <option key={space.id} value={space.id}>
+                            {space.name}
+                        </option>
+                    ))}
+                </select>
+
+                {/* Folders */}
+                <select
+                    value={settings.selectedFolder || ''} // because folder can be null
+                    onChange={(e) => handleSelectFolder(e.target.value)}
+                >
+                    <option value="">(No Folder)</option>
+                    {folders.map((folder) => (
+                        <option key={folder.id} value={folder.id}>
+                            {folder.name}
+                        </option>
+                    ))}
+                </select>
+
+                {/* If folder is chosen, show its lists. If no folder chosen, show folderless lists */}
+                <select
+                    value={settings.selectedList}
+                    onChange={(e) => handleSelectList(e.target.value)}
+                >
+                    <option value="">Select a List...</option>
+                    {lists.map((list) => (
+                        <option key={list.id} value={list.id}>
+                            {list.name}
+                        </option>
+                    ))}
+                </select>
+
+                {/* Custom fields for the chosen list */}
+                {availableFields.map((field) => (
+                    <div key={field.id}>
+                        <label>{field.name}</label>
+                        <input
+                            type="text"
+                            placeholder="Name in extension..."
+                            onChange={(e) => handleFieldMappingChange(field.id, e.target.value)}
+                        />
+                    </div>
+                ))}
+
+                {/* Save Settings */}
+                <button
+                    onClick={saveSettings}
+                    className="w-full mb-2 p-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+                >
+                    Save Settings
+                </button>
+                <p className="text-sm text-gray-700">{settingsStatus}</p>
+
+                <hr className="my-4" />
+
+                <button
+                    onClick={onGoToCreateTask}
+                    className="w-full p-2 text-blue-700 underline hover:text-blue-900"
+                >
+                    Back to Create Task
+                </button>
             </div>
-
-            {/* List ID */}
-            <div className="mb-4">
-                <label htmlFor="listId" className="block mb-1 font-medium">
-                    List ID:
-                </label>
-                <input
-                    id="listId"
-                    placeholder="Enter your List ID"
-                    value={settings.listId ?? ''}
-                    onChange={(e) => setSettings((prev) => ({ ...prev, listId: e.target.value }))}
-                    className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-            </div>
-
-            {/* Custom Field ID Email */}
-            <div className="mb-4">
-                <label htmlFor="customFieldIdEmail" className="block mb-1 font-medium">
-                    Custom Field ID for Email:
-                </label>
-                <input
-                    id="customFieldIdEmail"
-                    placeholder="Enter Custom Field ID for Email"
-                    value={settings.customFieldIdEmail ?? ''}
-                    onChange={(e) =>
-                        setSettings((prev) => ({ ...prev, customFieldIdEmail: e.target.value }))
-                    }
-                    className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-            </div>
-
-            {/* Custom Field ID Url */}
-            <div className="mb-4">
-                <label htmlFor="customFieldIdUrl" className="block mb-1 font-medium">
-                    Custom Field ID for Dice Profile:
-                </label>
-                <input
-                    id="customFieldIdUrl"
-                    placeholder="Enter Custom Field ID for Dice Profile"
-                    value={settings.customFieldIdUrl ?? ''}
-                    onChange={(e) =>
-                        setSettings((prev) => ({ ...prev, customFieldIdUrl: e.target.value }))
-                    }
-                    className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-            </div>
-
-            {/* Save Settings */}
-            <button
-                onClick={saveSettings}
-                className="w-full mb-2 p-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-            >
-                Save Settings
-            </button>
-            <p className="text-sm text-gray-700">{settingsStatus}</p>
-
-            <hr className="my-4" />
-
-            <button
-                onClick={onGoToCreateTask}
-                className="w-full p-2 text-blue-700 underline hover:text-blue-900"
-            >
-                Back to Create Task
-            </button>
         </div>
     )
 }
