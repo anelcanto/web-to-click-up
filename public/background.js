@@ -1,41 +1,60 @@
+// src/assets/sidepanel/background.js
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === "createTask") {
-        const taskName = message.taskName;
-        const taskEmail = message.taskEmail;
-        // const taskUrl = message.taskUrl; // commented out
+        const taskData = message.payload;
 
-        chrome.storage.sync.get(
+        chrome.storage.local.get(
             ['apiToken', 'selectedList', 'fieldMappings'],
             function (items) {
+                const { apiToken, selectedList, fieldMappings } = items;
+
+                if (!apiToken || !selectedList) {
+                    sendResponse({ success: false, error: 'Missing API token or selected list.' });
+                    return;
+                }
+
                 const taskPayload = {
-                    name: taskName,
+                    name: taskData.name,
                     custom_fields: [],
                 };
 
-                if (items.fieldMappings && typeof items.fieldMappings === 'object') {
-                    const emailFieldId = items.fieldMappings["Email Field"];
-                    // const urlFieldId = items.fieldMappings["URL Field"];
-
-                    if (emailFieldId) {
-                        taskPayload.custom_fields.push({
-                            id: emailFieldId,
-                            value: taskEmail,
-                        });
+                if (fieldMappings && typeof fieldMappings === 'object') {
+                    for (const [customLabel, fieldId] of Object.entries(fieldMappings)) {
+                        const fieldValue = taskData.custom_fields.find(cf => cf.id === fieldId)?.value;
+                        if (fieldValue) {
+                            taskPayload.custom_fields.push({
+                                id: fieldId,
+                                value: fieldValue,
+                            });
+                        }
                     }
-
-                    // if (urlFieldId) {
-                    //   taskPayload.custom_fields.push({
-                    //     id: urlFieldId,
-                    //     value: taskUrl,
-                    //   });
-                    // }
                 }
 
-                // POST to ClickUp ...
+                fetch(`https://api.clickup.com/api/v2/list/${selectedList}/task`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': apiToken,
+                    },
+                    body: JSON.stringify(taskPayload),
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.id) { // Assuming successful response includes task id
+                            sendResponse({ success: true, task: data });
+                        } else {
+                            sendResponse({ success: false, error: data });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error creating task:', error);
+                        sendResponse({ success: false, error: error.message });
+                    });
             }
         );
 
-        return true;
+        return true; // Keep the message channel open for sendResponse
     }
 });
 
