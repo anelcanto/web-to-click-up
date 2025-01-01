@@ -20,15 +20,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 };
 
                 if (fieldMappings && typeof fieldMappings === 'object') {
-                    for (const [customLabel, fieldId] of Object.entries(fieldMappings)) {
-                        const fieldValue = taskData.custom_fields.find(cf => cf.id === fieldId)?.value;
-                        if (fieldValue) {
+                    taskData.custom_fields.forEach(cf => {
+                        if (fieldMappings[cf.id]) {
                             taskPayload.custom_fields.push({
-                                id: fieldId,
-                                value: fieldValue,
+                                id: fieldMappings[cf.id],
+                                value: cf.value,
                             });
                         }
-                    }
+                    });
                 }
 
                 fetch(`https://api.clickup.com/api/v2/list/${selectedList}/task`, {

@@ -143,7 +143,6 @@ export default function SettingsPanel({ onGoToCreateTask }: SettingsPanelProps) 
                 return { ...prev, selectedSpace: spaceId, selectedFolder: null, selectedList: '' };
             } else {
                 // same space as before—don’t wipe out the folder/list
-                // specify that the listId is the same as before
                 return { ...prev, selectedSpace: spaceId };
             }
         });

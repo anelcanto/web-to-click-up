@@ -1,22 +1,18 @@
-// import React from 'react'
-import { useState } from 'react'
-import CreateTask from './CreateTask'
-import SettingsPanel from './SettingsPanel'
+// src/assets/sidepanel/SidePanel.tsx
+import React from 'react';
+import CreateTask from './CreateTask';
+import SettingsPanel from './SettingsPanel';
 
 export default function SidePanel() {
-    const [view, setView] = useState<'createTask' | 'settings'>('createTask')
-
-    // Simple callbacks to toggle the view
-    const goToSettings = () => setView('settings')
-    const goToCreateTask = () => setView('createTask')
+    const [isSettings, setIsSettings] = React.useState(false);
 
     return (
-        <>
-            {view === 'createTask' ? (
-                <CreateTask onGoToSettings={goToSettings} />
+        <div>
+            {isSettings ? (
+                <SettingsPanel onGoToCreateTask={() => setIsSettings(false)} />
             ) : (
-                <SettingsPanel onGoToCreateTask={goToCreateTask} />
+                <CreateTask onGoToSettings={() => setIsSettings(true)} />
             )}
-        </>
-    )
+        </div>
+    );
 }
