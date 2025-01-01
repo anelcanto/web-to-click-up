@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react';
 
 interface CreateTaskProps {
     onGoToSettings: () => void;
+    selectedFieldIds: string[];
+    availableFields: Field[];
 }
 
 interface Field {
@@ -10,26 +12,16 @@ interface Field {
     name: string;
 }
 
-export default function CreateTask({ onGoToSettings }: CreateTaskProps) {
+export default function CreateTask({ onGoToSettings, selectedFieldIds, availableFields }: CreateTaskProps) {
     // Always required field
     const [taskName, setTaskName] = useState('');
     const [statusMsg, setStatusMsg] = useState('');
 
     // All user-selected fields (standard and custom)
     const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
-    const [selectedFieldIds, setSelectedFieldIds] = useState<string[]>([]);
-    const [availableFields, setAvailableFields] = useState<Field[]>([]); // To map field IDs to names
 
     useEffect(() => {
-        // Load selected fields and availableFields from storage.local
-        chrome.storage.local.get(['selectedFieldIds', 'availableFields'], (items) => {
-            if (items.selectedFieldIds) {
-                setSelectedFieldIds(items.selectedFieldIds);
-            }
-            if (items.availableFields) {
-                setAvailableFields(items.availableFields);
-            }
-        });
+        // Load fieldValues if needed from storage or other sources
     }, []);
 
     const handleCreateTask = (e: React.FormEvent) => {

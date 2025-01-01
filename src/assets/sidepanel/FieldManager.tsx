@@ -1,5 +1,5 @@
 // src/assets/sidepanel/FieldManager.tsx
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 
 interface Field {
     id: string;
@@ -9,7 +9,7 @@ interface Field {
 interface FieldManagerProps {
     availableFields: Field[];
     initialSelectedFields: string[];
-    onSave: (selectedFieldIds: string[], availableFields: Field[]) => void; // Updated signature
+    onSave: (selectedFieldIds: string[], availableFields: Field[]) => void;
 }
 
 export default function FieldManager({
@@ -18,6 +18,11 @@ export default function FieldManager({
     onSave,
 }: FieldManagerProps) {
     const [selectedFields, setSelectedFields] = useState<string[]>(initialSelectedFields);
+
+    // Update selectedFields when initialSelectedFields prop changes
+    useEffect(() => {
+        setSelectedFields(initialSelectedFields);
+    }, [initialSelectedFields]);
 
     // Sort fields by name
     const sortedFields = useMemo(() => {

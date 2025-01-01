@@ -6,6 +6,9 @@ import FieldManager from './FieldManager';
 
 interface SettingsPanelProps {
     onGoToCreateTask: () => void;
+    selectedFieldIds: string[];
+    availableFields: Field[];
+    updateFields: (selectedFieldIds: string[], availableFields: Field[]) => void;
 }
 
 interface Settings {
@@ -19,7 +22,6 @@ interface Settings {
     selectedList?: string;
 
     // Custom Field Mappings
-    // This could be: { "UserLabel1": "clickUpFieldId1", "UserLabel2": "clickUpFieldId2" }
     fieldMappings?: Record<string, string>;
 }
 
@@ -60,14 +62,17 @@ const standardFields: Field[] = [
     // Add more standard fields as needed
 ];
 
-export default function SettingsPanel({ onGoToCreateTask }: SettingsPanelProps) {
+export default function SettingsPanel({
+    onGoToCreateTask,
+    selectedFieldIds,
+    availableFields,
+    updateFields,
+}: SettingsPanelProps) {
     // UI Data
     const [teams, setTeams] = useState<Team[]>([]);
     const [spaces, setSpaces] = useState<Space[]>([]);
     const [folders, setFolders] = useState<Folder[]>([]);
     const [lists, setLists] = useState<List[]>([]);
-    const [availableFields, setAvailableFields] = useState<CustomField[]>([]);
-    const [selectedFieldIds, setSelectedFieldIds] = useState<string[]>([]);
 
     // Combined Settings
     const [settings, setSettings] = useState<Settings>({
@@ -190,24 +195,16 @@ export default function SettingsPanel({ onGoToCreateTask }: SettingsPanelProps) 
             headers: { Authorization: settings.apiToken || '' },
         })
             .then(res => res.json())
-            .then(data => setAvailableFields(data.fields || []))
+            .then(data => {
+                const newAvailableFields = data.fields || [];
+                updateFields(selectedFieldIds, newAvailableFields);
+            })
             .catch(err => console.error(err));
-    }
-
-    // Handle Field Mapping
-    function handleFieldMappingChange(fieldId: string, customLabel: string) {
-        setSettings(prev => ({
-            ...prev,
-            fieldMappings: {
-                ...prev.fieldMappings,
-                [customLabel]: fieldId,
-            },
-        }));
     }
 
     function loadSettings() {
         chrome.storage.local.get(
-            ['apiToken', 'selectedTeam', 'selectedSpace', 'selectedFolder', 'selectedList', 'selectedFieldIds', 'availableFields'],
+            ['apiToken', 'selectedTeam', 'selectedSpace', 'selectedFolder', 'selectedList'],
             (items) => {
                 setSettings({
                     apiToken: items.apiToken || '',
@@ -217,8 +214,6 @@ export default function SettingsPanel({ onGoToCreateTask }: SettingsPanelProps) 
                     selectedList: items.selectedList || '',
                     fieldMappings: items.fieldMappings || {},
                 });
-                setSelectedFieldIds(items.selectedFieldIds || []);
-                setAvailableFields(items.availableFields || []);
             }
         );
     }
@@ -351,10 +346,8 @@ export default function SettingsPanel({ onGoToCreateTask }: SettingsPanelProps) 
                     <FieldManager
                         availableFields={combinedFields}
                         initialSelectedFields={selectedFieldIds}
-                        onSave={(finalIds: string[], availableFields: Field[]) => {
-                            setSelectedFieldIds(finalIds);
-                            setAvailableFields(availableFields); // Ensure availableFields are saved
-                            // Optionally auto-save here or rely on Save Settings button
+                        onSave={(finalIds: string[], newAvailableFields: Field[]) => {
+                            updateFields(finalIds, newAvailableFields);
                         }}
                     />
                 )}
