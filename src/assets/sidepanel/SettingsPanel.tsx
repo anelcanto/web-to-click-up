@@ -1,8 +1,9 @@
 // src/assets/sidepanel/SettingsPanel.tsx
 /* eslint no-unused-vars: "off" */
 
-import React, { useEffect, useState } from 'react';
-import FieldManager from './FieldManager';
+import React, { useEffect, useState, useRef } from 'react';
+import FieldManager, { FieldManagerRef } from './FieldManager';
+
 
 interface SettingsPanelProps {
     onGoToCreateTask: () => void;
@@ -91,6 +92,9 @@ export default function SettingsPanel({
         ...standardFields,
         ...availableFields, // from ClickUp
     ];
+
+    // Create a ref for FieldManager
+    const fieldManagerRef = useRef<FieldManagerRef>(null);
 
     useEffect(() => {
         loadSettings();
@@ -219,6 +223,10 @@ export default function SettingsPanel({
     }
 
     function saveSettings() {
+        // Call handleSave from FieldManager
+        fieldManagerRef.current?.handleSave();
+
+        // After saving fields, proceed to save other settings
         // Transform combinedFields to include only id and name
         const minimalFields = combinedFields.map(field => ({
             id: field.id,
@@ -344,6 +352,7 @@ export default function SettingsPanel({
                 {/* Field Manager */}
                 {combinedFields.length > 0 && (
                     <FieldManager
+                        ref={fieldManagerRef}
                         availableFields={combinedFields}
                         initialSelectedFields={selectedFieldIds}
                         onSave={(finalIds: string[], newAvailableFields: Field[]) => {

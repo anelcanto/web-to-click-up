@@ -1,5 +1,5 @@
 // src/assets/sidepanel/FieldManager.tsx
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, forwardRef, useImperativeHandle } from 'react';
 
 interface Field {
     id: string;
@@ -12,19 +12,28 @@ interface FieldManagerProps {
     onSave: (selectedFieldIds: string[], availableFields: Field[]) => void;
 }
 
-export default function FieldManager({
+
+interface FieldManagerProps {
+    availableFields: Field[];
+    initialSelectedFields: string[];
+    onSave: (selectedFieldIds: string[], availableFields: Field[]) => void;
+}
+export interface FieldManagerRef {
+    handleSave: () => void;
+}
+
+
+const FieldManager = forwardRef<FieldManagerRef, FieldManagerProps>(({
     availableFields,
     initialSelectedFields,
     onSave,
-}: FieldManagerProps) {
+}, ref) => {
     const [selectedFields, setSelectedFields] = useState<string[]>(initialSelectedFields);
 
-    // Update selectedFields when initialSelectedFields prop changes
     useEffect(() => {
         setSelectedFields(initialSelectedFields);
     }, [initialSelectedFields]);
 
-    // Sort fields by name
     const sortedFields = useMemo(() => {
         return [...availableFields].sort((a, b) => a.name.localeCompare(b.name));
     }, [availableFields]);
@@ -45,11 +54,18 @@ export default function FieldManager({
         setSelectedFields((prev) => prev.filter((_, i) => i !== index));
     }
 
+    // Expose handleSave method to parent via ref
+    useImperativeHandle(ref, () => ({
+        handleSave
+    }));
+
+
     function handleSave() {
         // Filter out empty selections
         const finalFields = selectedFields.filter((id) => id.trim() !== '');
-        onSave(finalFields, availableFields); // Pass both selectedFieldIds and availableFields
+        onSave(finalFields, availableFields); // Pass the final selected fields and available fields to the parent component
     }
+
 
     return (
         <div className="mt-4">
@@ -86,14 +102,17 @@ export default function FieldManager({
                 >
                     Add Field
                 </button>
-                <button
+                {/* Remove the Save button from here */}
+                {/* <button
                     type="button"
                     onClick={handleSave}
                     className="flex-1 p-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
                 >
                     Save
-                </button>
+                </button> */}
             </div>
         </div>
     );
-}
+});
+
+export default FieldManager;
