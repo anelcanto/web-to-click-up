@@ -359,7 +359,9 @@ export default function SettingsPanel({
                             updateFields(finalIds, newAvailableFields);
                         }}
                     />
+
                 )}
+                <div className="pb-2"></div>
 
                 {/* Save Settings */}
                 <button onClick={saveSettings} className="w-full mb-2 p-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
