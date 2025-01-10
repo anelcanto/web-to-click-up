@@ -2,14 +2,11 @@
     "manifest_version": 3,
     "name": "Web-to-ClickUp! BETA",
     "version": "1.3",
-    "description": "Boost your productivity by creating ClickUp tasks instantly without leaving your current tab. Easily convert content from any website into actionable tasks in ClickUp with just a click!",
+    "description": "Boost productivity by creating ClickUp tasks instantly. Turn any website content into ClickUp tasks with just one click!",
     "permissions": [
         "storage",
-        "sidePanel"
-    ],
-    "host_permissions": [
-        "<all_urls>",
-        "https://api.clickup.com/*"
+        "sidePanel",
+        "activeTab"
     ],
     "action": {
         "default_title": "Click to open panel"
