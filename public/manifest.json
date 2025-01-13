@@ -5,8 +5,7 @@
     "description": "Boost productivity by creating ClickUp tasks instantly. Turn any website content into ClickUp tasks with just one click!",
     "permissions": [
         "storage",
-        "sidePanel",
-        "activeTab"
+        "sidePanel"
     ],
     "action": {
         "default_title": "Click to open panel"
