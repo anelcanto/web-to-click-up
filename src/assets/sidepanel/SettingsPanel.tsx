@@ -46,10 +46,6 @@ interface List {
     name: string;
 }
 
-interface CustomField {
-    id: string;
-    name: string;
-}
 
 interface Field {
     id: string;
