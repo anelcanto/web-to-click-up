@@ -1,7 +1,7 @@
 // src/assets/sidepanel/SettingsPanel.tsx
 /* eslint no-unused-vars: "off" */
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import FieldManager, { FieldManagerRef } from './FieldManager';
 
 
@@ -94,64 +94,82 @@ export default function SettingsPanel({
 
     useEffect(() => {
         loadSettings();
+
+        function loadSettings() {
+            chrome.storage.local.get(
+                ['apiToken', 'selectedTeam', 'selectedSpace', 'selectedFolder', 'selectedList'],
+                (items) => {
+                    console.log('Loaded items:', items);
+                    setSettings({
+                        apiToken: items.apiToken || '',
+                        selectedTeam: items.selectedTeam || '',
+                        selectedSpace: items.selectedSpace || '',
+                        selectedFolder: items.selectedFolder ?? null,
+                        selectedList: items.selectedList || '',
+                        fieldMappings: items.fieldMappings || {},
+                    });
+                }
+            );
+
+        }
     }, []);
+
+    // Fetch Teams
 
     useEffect(() => {
         if (settings.apiToken) {
             fetchTeams();
         }
+
+        function fetchTeams() {
+            console.log('fetching teams');
+            console.log(`settings.apiToken: ${settings.apiToken}`);
+            fetch('https://api.clickup.com/api/v2/team', {
+                headers: { Authorization: settings.apiToken || '' },
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.teams) {
+                        setTeams(data.teams);
+                    }
+                })
+                .catch(err => console.error(err));
+        }
     }, [settings.apiToken]);
 
-    useEffect(() => {
-        if (teams.length > 0 && settings.selectedTeam) {
-            handleSelectTeam(settings.selectedTeam);
-        }
-    }, [teams]);
-
-    // Once spaces are loaded, if there's a saved selectedSpace, fetch folders and folderless lists
-    useEffect(() => {
-        if (spaces.length > 0 && settings.selectedSpace) {
-            handleSelectSpace(settings.selectedSpace);
-        }
-    }, [spaces]);
-
-    // Once folders are loaded, if there's a saved selectedFolder, fetch the lists in that folder
-    useEffect(() => {
-        if (folders.length > 0 && settings.selectedFolder) {
-            handleSelectFolder(settings.selectedFolder);
-        }
-    }, [folders]);
-
-    // Once lists are loaded, if there's a saved selectedList, fetch the custom fields for that list
-    useEffect(() => {
-        if (lists.length > 0 && settings.selectedList) {
-            handleSelectList(settings.selectedList);
-        }
-    }, [lists]);
-
-    // Handle Selecting Team → fetch Spaces
-    function handleSelectTeam(teamId: string) {
+    const handleSelectTeam = useCallback((teamId: string) => {
+        console.log('handleSelectTeams');
+        console.log('teams:', teams);
+        console.log('(selected team)teamId:', teamId);
         setSettings(prev => ({ ...prev, selectedTeam: teamId }));
+
+        if (!teamId) return; // Don't fetch spaces if teamId is empty
         fetch(`https://api.clickup.com/api/v2/team/${teamId}/space`, {
             headers: { Authorization: settings.apiToken || '' },
         })
             .then(res => res.json())
             .then(data => setSpaces(data.spaces || []))
             .catch(err => console.error(err));
-    }
+    }, [settings.apiToken, teams]);
 
-    // Handle Selecting Space → fetch Folders + Folderless Lists
-    function handleSelectSpace(spaceId: string) {
+    useEffect(() => {
+        if (teams.length > 0 && settings.selectedTeam) {
+            handleSelectTeam(settings.selectedTeam);
+        }
+    }, [teams, settings.selectedTeam, handleSelectTeam]);
+
+    const handleSelectSpace = useCallback((spaceId: string) => {
         setSettings((prev) => {
             // If user is actually changing the space, reset folder+list
-            if (prev.selectedSpace !== spaceId) {
+            if (prev.selectedSpace != spaceId) {
                 return { ...prev, selectedSpace: spaceId, selectedFolder: null, selectedList: '' };
             } else {
-                // same space as before—don’t wipe out the folder/list
+                // same space as before—don t wipe out the folder/list
                 return { ...prev, selectedSpace: spaceId };
             }
         });
 
+        if (!spaceId) return;
         // 1. Fetch folders in the chosen space
         fetch(`https://api.clickup.com/api/v2/space/${spaceId}/folder?archived=false`, {
             headers: { Authorization: settings.apiToken || '' },
@@ -171,52 +189,69 @@ export default function SettingsPanel({
                 setLists(data.lists || []);
             })
             .catch((err) => console.error(err));
-    }
+    }, [settings.apiToken]);
+
+    useEffect(() => {
+        console.log(`selectedSpace: ${settings.selectedSpace}`);
+        console.log('spaces:', spaces);
+        if (spaces.length > 0 && settings.selectedSpace) {
+            handleSelectSpace(settings.selectedSpace);
+        }
+    }, [spaces, settings.selectedSpace, handleSelectSpace]);
 
     // Handle Selecting Folder → fetch Lists
-    function handleSelectFolder(folderId: string) {
+    const handleSelectFolder = useCallback((folderId: string) => {
         setSettings(prev => ({
             ...prev,
             selectedFolder: folderId,
             selectedList: prev.selectedList || '', // Only clear selectedList if it's not already set
         }));
+
+        if (!folderId) return;
         fetch(`https://api.clickup.com/api/v2/folder/${folderId}/list`, {
             headers: { Authorization: settings.apiToken || '' },
         })
             .then(res => res.json())
             .then(data => setLists(data.lists || []))
             .catch(err => console.error(err));
-    }
+    }, [settings.apiToken]);
+
+    // Once folders are loaded, if there's a saved selectedFolder, fetch the lists in that folder
+    useEffect(() => {
+        if (folders.length > 0 && settings.selectedFolder) {
+            console.log('selected folder:', settings.selectedFolder);
+            handleSelectFolder(settings.selectedFolder);
+        }
+    }, [folders, settings.selectedFolder, handleSelectFolder]);
+
 
     // Handle Selecting List → fetch Custom Fields
-    function handleSelectList(listId: string) {
-        setSettings(prev => ({ ...prev, selectedList: listId }));
+    const handleSelectList = useCallback((listId: string) => {
+        setSettings((prev) => {
+            // Only update if the value actually changed
+            if (prev.selectedList == listId) return prev;
+            return { ...prev, selectedList: listId };
+        });
+
+        if (!listId) return;
         fetch(`https://api.clickup.com/api/v2/list/${listId}/field`, {
             headers: { Authorization: settings.apiToken || '' },
         })
-            .then(res => res.json())
-            .then(data => {
+            .then((res) => res.json())
+            .then((data) => {
                 const newAvailableFields = data.fields || [];
                 updateFields(selectedFieldIds, newAvailableFields);
             })
-            .catch(err => console.error(err));
-    }
+            .catch((err) => console.error(err));
+    }, [settings.apiToken, selectedFieldIds, updateFields]);
 
-    function loadSettings() {
-        chrome.storage.local.get(
-            ['apiToken', 'selectedTeam', 'selectedSpace', 'selectedFolder', 'selectedList'],
-            (items) => {
-                setSettings({
-                    apiToken: items.apiToken || '',
-                    selectedTeam: items.selectedTeam || '',
-                    selectedSpace: items.selectedSpace || '',
-                    selectedFolder: items.selectedFolder ?? null,
-                    selectedList: items.selectedList || '',
-                    fieldMappings: items.fieldMappings || {},
-                });
-            }
-        );
-    }
+    // // Once lists are loaded, if there's a saved selectedList, fetch the custom fields for that list
+    // useEffect(() => {
+    //     console.log("LIST useEffect triggered");
+    //     if (lists.length > 0 && settings.selectedList) {
+    //         handleSelectList(settings.selectedList);
+    //     }
+    // }, [lists, settings.selectedList, handleSelectList]);
 
     function saveSettings() {
         // Call handleSave from FieldManager
@@ -249,19 +284,7 @@ export default function SettingsPanel({
         });
     }
 
-    // Fetch Teams
-    function fetchTeams() {
-        fetch('https://api.clickup.com/api/v2/team', {
-            headers: { Authorization: settings.apiToken || '' },
-        })
-            .then(res => res.json())
-            .then(data => {
-                if (data.teams) {
-                    setTeams(data.teams);
-                }
-            })
-            .catch(err => console.error(err));
-    }
+
 
     const toggleApiTokenVisibility = () => {
         setApiTokenVisible((prev) => !prev)
@@ -273,7 +296,8 @@ export default function SettingsPanel({
 
             <div>
                 {/* API Token Field */}
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2" >
+
                     <input
                         type={apiTokenVisible ? 'text' : 'password'}
                         value={settings.apiToken}
