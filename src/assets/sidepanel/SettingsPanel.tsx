@@ -50,14 +50,11 @@ interface List {
 interface Field {
     id: string;
     name: string;
+    type?: string; // E.g., 'drop_down'
+    options?: { id: string; name: string }[]; // For dropdown options
 }
 
-const standardFields: Field[] = [
-    { id: 'taskDescription', name: 'Task Description' },
-    { id: 'taskStatus', name: 'Task Status' },
-    { id: 'taskAssignee', name: 'Task Assignee' },
-    // Add more standard fields as needed
-];
+
 
 export default function SettingsPanel({
     onGoToCreateTask,
@@ -71,6 +68,12 @@ export default function SettingsPanel({
     const [folders, setFolders] = useState<Folder[]>([]);
     const [lists, setLists] = useState<List[]>([]);
 
+
+
+    // UI states
+    const [apiTokenVisible, setApiTokenVisible] = useState(false);
+    const [settingsStatus, setSettingsStatus] = useState('');
+
     // Combined Settings
     const [settings, setSettings] = useState<Settings>({
         apiToken: '',
@@ -81,13 +84,8 @@ export default function SettingsPanel({
         fieldMappings: {},
     });
 
-    // UI states
-    const [apiTokenVisible, setApiTokenVisible] = useState(false);
-    const [settingsStatus, setSettingsStatus] = useState('');
-    const combinedFields: Field[] = [
-        ...standardFields,
-        ...availableFields, // from ClickUp
-    ];
+
+
 
     // Create a ref for FieldManager
     const fieldManagerRef = useRef<FieldManagerRef>(null);
@@ -115,7 +113,6 @@ export default function SettingsPanel({
     }, []);
 
     // Fetch Teams
-
     useEffect(() => {
         if (settings.apiToken) {
             fetchTeams();
@@ -224,14 +221,12 @@ export default function SettingsPanel({
         }
     }, [folders, settings.selectedFolder, handleSelectFolder]);
 
-
     // Handle Selecting List → fetch Custom Fields
     const handleSelectList = useCallback((listId: string) => {
-        setSettings((prev) => {
-            // Only update if the value actually changed
-            if (prev.selectedList == listId) return prev;
-            return { ...prev, selectedList: listId };
-        });
+        setSettings((prev) => ({
+            ...prev,
+            selectedList: listId,
+        }));
 
         if (!listId) return;
         fetch(`https://api.clickup.com/api/v2/list/${listId}/field`, {
@@ -239,7 +234,13 @@ export default function SettingsPanel({
         })
             .then((res) => res.json())
             .then((data) => {
-                const newAvailableFields = data.fields || [];
+                console.log("data.fields", data.fields)
+                const newAvailableFields = data.fields?.map((field: any) => ({
+                    id: field.id,
+                    name: field.name,
+                    type: field.type,
+                    options: field.type == 'drop_down' ? field.type_config.options : undefined,
+                })) || [];
                 updateFields(selectedFieldIds, newAvailableFields);
             })
             .catch((err) => console.error(err));
@@ -253,6 +254,30 @@ export default function SettingsPanel({
     //     }
     // }, [lists, settings.selectedList, handleSelectList]);
 
+    const hasLoadedCustomFields = useRef(false);
+
+    useEffect(() => {
+        if (!settings.selectedList) return;
+        if (!hasLoadedCustomFields.current) {
+            handleSelectList(settings.selectedList);
+            hasLoadedCustomFields.current = true;
+        }
+    }, [settings.selectedList, handleSelectList]);
+
+
+
+    const standardFields: Field[] = [
+        { id: 'taskDescription', name: 'Task Description' },
+        { id: 'taskStatus', name: 'Task Status' },
+        { id: 'taskAssignee', name: 'Task Assignee' },
+        // Add more standard fields as needed
+    ];
+
+    const combinedFields: Field[] = [
+        ...standardFields,
+        ...availableFields, // from ClickUp
+    ];
+
     function saveSettings() {
         // Call handleSave from FieldManager
         fieldManagerRef.current?.handleSave();
@@ -262,7 +287,11 @@ export default function SettingsPanel({
         const minimalFields = combinedFields.map(field => ({
             id: field.id,
             name: field.name,
+            type: field.type || 'text',
+            options: field.options,
         }));
+        console.log('field:', minimalFields)
+
 
         chrome.storage.local.set({
             apiToken: settings.apiToken,
@@ -271,15 +300,22 @@ export default function SettingsPanel({
             selectedFolder: settings.selectedFolder,
             selectedList: settings.selectedList,
             fieldMappings: settings.fieldMappings,
-            selectedFieldIds: selectedFieldIds, // Add these
-            availableFields: minimalFields, // Save optimized fields
+            selectedFieldIds: selectedFieldIds,
+            availableFields: minimalFields.map((field) => ({
+                id: field.id,
+                name: field.name,
+                type: field.type || 'text',
+                options: field.type === 'drop_down' ? field.options?.map(opt => ({
+                    id: opt.id,
+                    name: opt.name
+                })) : undefined,
+            })),
+
         }, () => {
             if (chrome.runtime.lastError) {
                 console.error('Error saving settings:', chrome.runtime.lastError);
-                setSettingsStatus('Error saving settings. Please try again.');
             } else {
                 setSettingsStatus('Settings saved.');
-                setTimeout(() => setSettingsStatus(''), 1500);
             }
         });
     }

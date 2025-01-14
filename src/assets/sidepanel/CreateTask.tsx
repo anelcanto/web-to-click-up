@@ -10,6 +10,8 @@ interface CreateTaskProps {
 interface Field {
     id: string;
     name: string;
+    type?: string; // Add this line
+    options?: { id: string; name: string }[]; // Add this if options are also missing
 }
 
 export default function CreateTask({ onGoToSettings, selectedFieldIds, availableFields }: CreateTaskProps) {
@@ -113,25 +115,45 @@ export default function CreateTask({ onGoToSettings, selectedFieldIds, available
 
                 {/* Render inputs for each selected field */}
                 {selectedFieldIds.map((fieldId) => {
-                    // Find the field name from availableFields
-                    const field = availableFields.find(f => f.id === fieldId);
-                    const placeholder = field ? field.name : `Field ${fieldId}`;
+                    const field = availableFields.find((f) => f.id === fieldId);
+                    console.log('field: ', field);
+                    if (!field) return null;
 
                     return (
-                        <input
-                            key={fieldId}
-                            type="text"
-                            placeholder={placeholder}
-                            aria-label={`Field ${fieldId}`}
-                            value={fieldValues[fieldId] || ''}
-                            onChange={(e) =>
-                                setFieldValues((prev) => ({
-                                    ...prev,
-                                    [fieldId]: e.target.value,
-                                }))
-                            }
-                            className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
+                        <div key={fieldId}>
+                            {field.type === 'drop_down' ? (
+                                <select
+                                    value={fieldValues[fieldId] || ''}
+                                    onChange={(e) =>
+                                        setFieldValues((prev) => ({
+                                            ...prev,
+                                            [fieldId]: e.target.value,
+                                        }))
+                                    }
+                                    className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                    <option value="">Select {field.name}...</option>
+                                    {field.options?.map((option: { id: string; name: string }) => (
+                                        <option key={option.id} value={option.id}>
+                                            {option.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            ) : (
+                                <input
+                                    type="text"
+                                    placeholder={field.name}
+                                    value={fieldValues[fieldId] || ''}
+                                    onChange={(e) =>
+                                        setFieldValues((prev) => ({
+                                            ...prev,
+                                            [fieldId]: e.target.value,
+                                        }))
+                                    }
+                                    className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                            )}
+                        </div>
                     );
                 })}
 

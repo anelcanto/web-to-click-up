@@ -4,6 +4,8 @@ import React, { useState, useMemo, useEffect, forwardRef, useImperativeHandle } 
 interface Field {
     id: string;
     name: string;
+    type?: string; // E.g., 'drop_down'
+    options?: { id: string; name: string }[]; // For dropdown options
 }
 
 interface FieldManagerProps {
@@ -61,11 +63,19 @@ const FieldManager = forwardRef<FieldManagerRef, FieldManagerProps>(({
 
 
     function handleSave() {
-        // Filter out empty selections
-        const finalFields = selectedFields.filter((id) => id.trim() !== '');
-        onSave(finalFields, availableFields); // Pass the final selected fields and available fields to the parent component
-    }
+        const finalFields = selectedFields
+            .filter((id) => id.trim() !== '')
+            .map((id) => {
+                const field = availableFields.find((f) => f.id === id);
+                return field ? { ...field } : null;
+            })
+            .filter(Boolean) as Field[];
 
+        onSave(
+            finalFields.map((f) => f.id),
+            finalFields // Include options here
+        );
+    }
 
     return (
         <div className="mt-4">
