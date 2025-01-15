@@ -1,17 +1,11 @@
 // src/assets/sidepanel/CreateTask.tsx
 import React, { useState, useEffect } from 'react';
+import { RenderField, Field } from '../components/RenderField'; // Adjust the import path if you placed it separately
 
 interface CreateTaskProps {
     onGoToSettings: () => void;
     selectedFieldIds: string[];
     availableFields: Field[];
-}
-
-interface Field {
-    id: string;
-    name: string;
-    type?: string; // Add this line
-    options?: { id: string; name: string }[]; // Add this if options are also missing
 }
 
 export default function CreateTask({ onGoToSettings, selectedFieldIds, availableFields }: CreateTaskProps) {
@@ -25,6 +19,13 @@ export default function CreateTask({ onGoToSettings, selectedFieldIds, available
     useEffect(() => {
         // Load fieldValues if needed from storage or other sources
     }, []);
+
+    const handleFieldChange = (fieldId: string, newValue: string) => {
+        setFieldValues((prev) => ({
+            ...prev,
+            [fieldId]: newValue,
+        }));
+    };
 
     const handleCreateTask = (e: React.FormEvent) => {
         e.preventDefault();
@@ -57,7 +58,6 @@ export default function CreateTask({ onGoToSettings, selectedFieldIds, available
                         // Assuming value is a user ID; ClickUp API expects an array of user IDs
                         standardFieldData['assignees'] = [value];
                         break;
-                    // Add more cases if you have additional standard fields
                     default:
                         break;
                 }
@@ -116,43 +116,14 @@ export default function CreateTask({ onGoToSettings, selectedFieldIds, available
                 {/* Render inputs for each selected field */}
                 {selectedFieldIds.map((fieldId) => {
                     const field = availableFields.find((f) => f.id === fieldId);
-                    console.log('field: ', field);
                     if (!field) return null;
-
                     return (
                         <div key={fieldId}>
-                            {field.type === 'drop_down' ? (
-                                <select
-                                    value={fieldValues[fieldId] || ''}
-                                    onChange={(e) =>
-                                        setFieldValues((prev) => ({
-                                            ...prev,
-                                            [fieldId]: e.target.value,
-                                        }))
-                                    }
-                                    className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                >
-                                    <option value="">Select {field.name}...</option>
-                                    {field.options?.map((option: { id: string; name: string }) => (
-                                        <option key={option.id} value={option.id}>
-                                            {option.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            ) : (
-                                <input
-                                    type="text"
-                                    placeholder={field.name}
-                                    value={fieldValues[fieldId] || ''}
-                                    onChange={(e) =>
-                                        setFieldValues((prev) => ({
-                                            ...prev,
-                                            [fieldId]: e.target.value,
-                                        }))
-                                    }
-                                    className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
-                            )}
+                            <RenderField
+                                field={field}
+                                value={fieldValues[fieldId] || ''}
+                                onChange={handleFieldChange}
+                            />
                         </div>
                     );
                 })}

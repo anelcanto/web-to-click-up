@@ -5,7 +5,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const taskData = message.payload;
 
         chrome.storage.local.get(
-            ['apiToken', 'selecteddList', 'fieldMappings'],
+            ['apiToken', 'selectedList', 'fieldMappings'],
             function (items) {
                 const { apiToken, selectedList, fieldMappings } = items;
 
