@@ -63,10 +63,22 @@ export default function CreateTask({ onGoToSettings, selectedFieldIds, available
     };
 
     // Save defaults including fieldValues and URL option settings.
+    // If the URL option for a field is "current", then do not save its current value.
     const saveDefaults = () => {
+        // Create a new copy of fieldValues that excludes URL values when option is "current"
+        const filteredFieldValues = { ...fieldValues };
+        // For each field ID in fieldUrlOptions that relates to a URL field,
+        // if the option is "current", clear that field's value.
+        Object.keys(fieldUrlOptions).forEach((fieldId) => {
+            if (fieldUrlOptions[fieldId] === "current") {
+                console.log(`[CreateTask] For field ${fieldId}, URL option is "current" – clearing the saved value.`);
+                filteredFieldValues[fieldId] = ''; // or you could omit it altogether
+            }
+        });
+
         const defaults = {
             taskName,
-            fieldValues,
+            fieldValues: filteredFieldValues,
             fieldUrlOptions,
         };
         console.log('[CreateTask] saveDefaults:', defaults);
