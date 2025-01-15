@@ -1,5 +1,5 @@
 // src/assets/sidepanel/CreateTask.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { RenderField, Field } from '../components/RenderField';
 
 interface CreateTaskProps {
@@ -14,12 +14,12 @@ export default function CreateTask({ onGoToSettings, selectedFieldIds, available
     const [statusMsg, setStatusMsg] = useState('');
     // Field values for both standard and custom fields.
     const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
-    // New state: mapping for URL field options (e.g., "manual" or "current")
+    // State: mapping for URL field options (e.g., "manual" or "current")
     const [fieldUrlOptions, setFieldUrlOptions] = useState<Record<string, string>>({});
 
-    // On mount, load saved defaults from chrome storage.
-    useEffect(() => {
-        console.log('[CreateTask] useEffect - loading defaults from Chrome storage...');
+    // Encapsulated logic for loading defaults from Chrome storage.
+    const loadDefaults = useCallback(() => {
+        console.log('[CreateTask] loadDefaults invoked.');
         chrome.storage.local.get(['defaults'], (result) => {
             console.log('[CreateTask] Chrome storage get defaults:', result.defaults);
             if (result.defaults) {
@@ -40,6 +40,11 @@ export default function CreateTask({ onGoToSettings, selectedFieldIds, available
         });
     }, []);
 
+    // Load defaults on initial mount.
+    useEffect(() => {
+        loadDefaults();
+    }, [loadDefaults]);
+
     const handleFieldChange = (fieldId: string, newValue: string) => {
         console.log('[CreateTask] handleFieldChange:', { fieldId, newValue });
         setFieldValues((prev) => ({
@@ -57,7 +62,7 @@ export default function CreateTask({ onGoToSettings, selectedFieldIds, available
         }));
     };
 
-    // Save defaults including both fieldValues and URL option settings.
+    // Save defaults including fieldValues and URL option settings.
     const saveDefaults = () => {
         const defaults = {
             taskName,
@@ -72,15 +77,18 @@ export default function CreateTask({ onGoToSettings, selectedFieldIds, available
         });
     };
 
-    // Clear defaults and also clear current UI state if needed.
+    // Clear defaults and also clear current UI state, then reload defaults.
     const clearDefaults = () => {
         console.log('[CreateTask] clearDefaults invoked.');
         chrome.storage.local.remove(['defaults'], () => {
             console.log('[CreateTask] Defaults removed from Chrome storage.');
+            // Clear the UI state
             setTaskName('');
             setFieldValues({});
             setFieldUrlOptions({});
-            setStatusMsg('Defaults cleared!');
+            // Immediately reload defaults from Chrome storage
+            loadDefaults();
+            setStatusMsg('Defaults cleared and reloaded!');
             setTimeout(() => setStatusMsg(''), 2000);
         });
     };
@@ -143,9 +151,12 @@ export default function CreateTask({ onGoToSettings, selectedFieldIds, available
                 if (response?.success) {
                     setStatusMsg('Task created successfully!');
                     console.log('[CreateTask] Task created successfully. Clearing UI state.');
+                    // Clear the UI state...
                     setTaskName('');
                     setFieldValues({});
                     setFieldUrlOptions({});
+                    // Then reload defaults from storage.
+                    loadDefaults();
                 } else {
                     const err = response?.error || 'Unknown error';
                     setStatusMsg(`Error: ${err}`);

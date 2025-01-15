@@ -26,21 +26,27 @@ export const RenderField: React.FC<RenderFieldProps> = ({ field, value, onChange
     const inputClass = "w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500";
     console.log(`[RenderField] Rendering field id: ${field.id}, type: ${field.type}, current value: ${value}`);
 
-    // When the option is "current", fetch the current tab URL.
+    // useEffect for URL fetching when "current" is selected.
     useEffect(() => {
         if (field.type === 'url' && urlOption === "current") {
             console.log(`[RenderField/useEffect] URL option is "current" for field ${field.id}. Fetching current tab URL...`);
             chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
                 console.log(`[RenderField/useEffect] chrome.tabs.query result for field ${field.id}:`, tabs);
                 if (tabs && tabs.length > 0 && tabs[0].url) {
-                    console.log(`[RenderField/useEffect] Fetched URL "${tabs[0].url}" for field ${field.id}. Calling onChange...`);
-                    onChange(field.id, tabs[0].url);
+                    const fetchedUrl = tabs[0].url;
+                    // Only trigger onChange if the fetched URL differs from the current value.
+                    if (fetchedUrl !== value) {
+                        console.log(`[RenderField/useEffect] Fetched URL "${fetchedUrl}" differs from current value "${value}". Calling onChange...`);
+                        onChange(field.id, fetchedUrl);
+                    } else {
+                        console.log(`[RenderField/useEffect] Fetched URL is identical to current value. No action needed.`);
+                    }
                 } else {
                     console.warn(`[RenderField/useEffect] No URL found for field ${field.id}.`);
                 }
             });
         }
-    }, [urlOption, field, onChange]);
+    }, [urlOption, field, onChange, value]);
 
     // Handler for when the URL option select changes.
     const handleUrlOptionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -49,7 +55,7 @@ export const RenderField: React.FC<RenderFieldProps> = ({ field, value, onChange
         if (onUrlOptionChange) {
             onUrlOptionChange(field.id, selectedOption);
         }
-        // If switching back to manual, you can clear the URL if desired.
+        // If switching back to manual, clear the URL if desired.
         if (selectedOption === "manual") {
             onChange(field.id, '');
         }
@@ -63,7 +69,6 @@ export const RenderField: React.FC<RenderFieldProps> = ({ field, value, onChange
                     type="url"
                     placeholder={field.name}
                     value={value}
-                    // Disable input when option is "current"
                     disabled={urlOption === "current"}
                     onChange={(e) => {
                         console.log(`[RenderField] Manual URL change for field ${field.id}:`, e.target.value);
