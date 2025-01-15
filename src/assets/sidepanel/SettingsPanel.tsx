@@ -325,16 +325,26 @@ export default function SettingsPanel({
 
 
 
-    const toggleApiTokenVisibility = () => {
-        setApiTokenVisible((prev) => !prev)
-    }
+    // const toggleApiTokenVisibility = () => {
+    //     setApiTokenVisible((prev) => !prev)
+    // }
+
+    // // Example implementation for handleConnectClickup
+    // function handleConnectClickup() {
+    //     const clientId = 'YOUR_CLIENT_ID'; // from your OAuth app registration
+    //     const redirectUri = encodeURIComponent('https://yourapp.com/oauth/callback'); // must match the registered URI
+    //     const state = encodeURIComponent('some_random_state_value'); // generate and store this state to verify later
+
+    //     const authorizationUrl = `https://app.clickup.com/api?client_id=${clientId}&redirect_uri=${redirectUri}&state=${state}`;
+    //     window.location.href = authorizationUrl;
+    // }
 
     return (
         <div className="p-4 w-72 font-sans">
             <h3 className="text-lg font-bold mb-4">Settings</h3>
 
             <div>
-                {/* API Token Field */}
+                {/* // API Token Field
                 <div className="flex items-center space-x-2" >
 
                     <input
@@ -350,6 +360,24 @@ export default function SettingsPanel({
                         aria-label="Toggle API Token Visibility"
                     >
                         {apiTokenVisible ? 'Hide' : 'Show'}
+                    </button>
+                </div> */}
+
+                <div className="flex items-center space-x-2">
+                    <button
+                        onClick={() => {
+                            chrome.runtime.sendMessage({ action: "startOAuth" }, (response) => {
+                                if (response.success) {
+                                    console.log("OAuth successful! Access token:", response.accessToken);
+                                    // Save the token locally in your extension state or storage
+                                } else {
+                                    console.error("OAuth failed:", response.error);
+                                }
+                            });
+                        }}
+                        className="w-full p-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+                    >
+                        Connect ClickUp
                     </button>
                 </div>
 

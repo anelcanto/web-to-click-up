@@ -1,5 +1,6 @@
 // public/background.js
-
+import { CLIENT_SECRET } from "./config.js";
+// Listen for messages to create tasks or initiate OAuth
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === "createTask") {
         const taskData = message.payload;
@@ -13,7 +14,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             }
 
             // Build the URL, including query parameters if required.
-            // Example: if you want to reference a task by its custom task ID, you might add ?custom_task_ids=true&team_id={teamId}
             const queryParams = new URLSearchParams();
             // Uncomment these lines if using custom task ids
             // queryParams.append('custom_task_ids', 'true');
@@ -21,39 +21,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             const url = `https://api.clickup.com/api/v2/list/${selectedList}/task${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
 
             // Build the payload for the API using both standard and custom fields.
-            // Standard fields mapping (required or optional):
             const payload = {
-                name: taskData.name,                        // Required
-                // If provided, you can set markdown_content to override description.
-                // markdown_content: taskData.markdown_content, 
-                description: taskData.description || "",     // Use description if markdown_content is not provided.
-                // assignees: taskData.assignees || [],         // Array of integers (user IDs)
-                // status: taskData.status || "",               // String
-                // priority: taskData.priority || null,         // Integer or null
-                // due_date: taskData.due_date || null,         // Unix timestamp in milliseconds
-                // due_date_time: taskData.due_date_time || false,// Boolean - whether due_date includes time
-                // start_date: taskData.start_date || null,     // Unix timestamp
-                // start_date_time: taskData.start_date_time || false,
-                // time_estimate: taskData.time_estimate || null, // Integer (in milliseconds or seconds as required)
-                // points: taskData.points || null,             // Number
-                // notify_all: taskData.notify_all || false,    // Boolean
-                // parent: taskData.parent || null,             // Parent task id if creating a subtask
-                // links_to: taskData.links_to || null,         // Linked dependency task id
+                name: taskData.name,                      // Required
+                description: taskData.description || "",  // Fallback to description if markdown_content is not provided.
                 check_required_custom_fields: taskData.check_required_custom_fields || false,
-                // Add additional standard properties as needed,
-                // Example: archived, group_assignees, tags, etc.
             };
 
             // Build custom fields payload. The ClickUp API expects an array of objects.
-            // Each object should include at least id and a nested object with the key "value" and optionally other keys (e.g., value_options).
             const customFields = [];
             if (Array.isArray(taskData.custom_fields)) {
                 taskData.custom_fields.forEach(cf => {
-                    // If you have a mapping for the field id, use it; otherwise use the original.
                     const mappedId = (fieldMappings && fieldMappings[cf.id]) ? fieldMappings[cf.id] : cf.id;
-
-                    // Each custom field must be an object with the key "value".
-                    // Optionally include "value_options" (for date fields, for example).
                     customFields.push({
                         id: mappedId,
                         value: cf.value,
@@ -67,7 +45,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 payload.custom_fields = customFields;
             }
 
-            // Optionally log the payload for debugging.
             console.log("Payload being sent:", payload);
 
             // Make the POST request to create the task.
@@ -96,8 +73,79 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         // Return true to indicate asynchronous response.
         return true;
     }
+
+    if (message.action === "startOAuth") {
+        const clientId = "KHYFIN9VSU8TBIRSA10WOGT5BPSQI0TO";
+        const redirectUri = chrome.identity.getRedirectURL();
+        const clientSecret = CLIENT_SECRET;
+        console.log("Redirect URI:", redirectUri);
+        const state = Math.random().toString(36).substring(7); // Generate a random state value for CSRF protection
+
+        const authUrl = `https://app.clickup.com/api?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`;
+        // const authUrl = `https://app.clickup.com/api?client_id=${clientId}&redirect_uri=${redirectUri}`;
+
+        chrome.identity.launchWebAuthFlow(
+            {
+                url: authUrl,
+                interactive: true, // Opens a popup to let the user log in
+            },
+            (redirectUrl) => {
+                if (chrome.runtime.lastError) {
+                    console.error(chrome.runtime.lastError.message);
+                    sendResponse({ success: false, error: chrome.runtime.lastError.message });
+                    return;
+                }
+
+                // Parse the authorization code from the redirect URL
+                const urlParams = new URLSearchParams(new URL(redirectUrl).search);
+                const code = urlParams.get("code");
+
+                console.log('urlParams', urlParams);
+                console.log('code', code);
+
+                if (!code) {
+                    console.log("data", urlParams, code, redirectUrl, authUrl);
+                    sendResponse({ success: false, error: "Authorization code not found." });
+                    return;
+                }
+
+                // Exchange the authorization code for an access token
+                fetch("https://api.clickup.com/api/v2/oauth/token", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        client_id: clientId,
+                        client_secret: clientSecret,
+                        code: code,
+                    }),
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.access_token) {
+                            // Save the access token in Chrome storage
+                            chrome.storage.local.set({ apiToken: data.access_token }, () => {
+                                console.log("Access token saved:", data.access_token);
+                            });
+                            sendResponse({ success: true, accessToken: data.access_token });
+                        } else {
+                            sendResponse({ success: false, error: data.error });
+                        }
+                    })
+                    .catch((error) => {
+                        console.error("Token exchange error:", error);
+                        sendResponse({ success: false, error: error.message });
+                    });
+            }
+        );
+
+        // Indicate that the response will be sent asynchronously
+        return true;
+    }
 });
 
+// Set the side panel behavior to open on action click
 chrome.sidePanel
     .setPanelBehavior({ openPanelOnActionClick: true })
     .catch((error) => console.error(error));

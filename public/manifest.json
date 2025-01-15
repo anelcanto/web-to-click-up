@@ -6,13 +6,15 @@
     "permissions": [
         "storage",
         "sidePanel",
-        "tabs"
+        "tabs",
+        "identity"
     ],
     "action": {
         "default_title": "Click to open panel"
     },
     "background": {
-        "service_worker": "background.js"
+        "service_worker": "background.js",
+        "type": "module"
     },
     "host_permissions": [
         "https://api.clickup.com/"
@@ -20,6 +22,11 @@
     "side_panel": {
         "default_path": "index.html"
     },
+    "oauth2": {
+        "client_id": "KHYFIN9VSU8TBIRSA10WOGT5BPSQI0TO",
+        "scopes": []
+    },
+    "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAoJmDzjpHMQac2HUNIJFqUyMaBBQV2CxdUlj7YXJagDg1I6SoXcZHsljAcJFFDtN7A+0iY1VczJ4+QCnhtIIQ3m1Nh8YyRcjAQHXTQ14HHCHsR4aFo0dBZEod7mUERo2nKyWer54qaLLh/W7T+YFgeKTHV2pNXxHVrYQI6gRiPF3ckaiqsj7cyXZISK+iF7VyTFbojgtWDoJsqPLEhgIXYdhNVAq8QhmoIz5xFQfdivJe7VM19vE8bigJl1Qn/AAgszprHMnkVkF5qBgjarovwxEl7VaCH7qFr7nr4QlCOaU7btZbOEYi6VIy5WWLF25pN7WNem+5A/g9MPihBvkGTwIDAQAB",
     "commands": {
         "_execute_action": {
             "suggested_key": {
