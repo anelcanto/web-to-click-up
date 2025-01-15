@@ -115,7 +115,7 @@ export default function CreateTask({ onGoToSettings, selectedFieldIds, available
         }
         setStatusMsg('Creating task...');
 
-        const standardFields = ['taskDescription', 'taskStatus', 'taskAssignee'];
+        const standardFields = ['taskDescription'] //, 'taskStatus', 'taskAssignee'];
         const standardFieldData: Record<string, any> = {};
         const customFieldsPayload: { id: string; value: any }[] = [];
 
@@ -131,12 +131,12 @@ export default function CreateTask({ onGoToSettings, selectedFieldIds, available
                     case 'taskDescription':
                         standardFieldData.description = rawValue;
                         break;
-                    case 'taskStatus':
-                        standardFieldData.status = rawValue;
-                        break;
-                    case 'taskAssignee':
-                        standardFieldData.assignees = [rawValue];
-                        break;
+                    // case 'taskStatus':
+                    //     standardFieldData.status = rawValue;
+                    //     break;
+                    // case 'taskAssignee':
+                    //     standardFieldData.assignees = [rawValue];
+                    //     break;
                     default:
                         break;
                 }

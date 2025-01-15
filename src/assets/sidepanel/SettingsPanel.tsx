@@ -209,7 +209,10 @@ export default function SettingsPanel({
             headers: { Authorization: settings.apiToken || '' },
         })
             .then(res => res.json())
-            .then(data => setLists(data.lists || []))
+            .then(data => {
+                console.log("data.lists", data.lists)
+                setLists(data.lists || []);
+            })
             .catch(err => console.error(err));
     }, [settings.apiToken]);
 
@@ -268,8 +271,8 @@ export default function SettingsPanel({
 
     const standardFields: Field[] = [
         { id: 'taskDescription', name: 'Task Description' },
-        { id: 'taskStatus', name: 'Task Status' },
-        { id: 'taskAssignee', name: 'Task Assignee' },
+        // { id: 'taskStatus', name: 'Task Status' },
+        // { id: 'taskAssignee', name: 'Task Assignee' },
         // Add more standard fields as needed
     ];
 

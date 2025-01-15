@@ -27,18 +27,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 // If provided, you can set markdown_content to override description.
                 // markdown_content: taskData.markdown_content, 
                 description: taskData.description || "",     // Use description if markdown_content is not provided.
-                assignees: taskData.assignees || [],         // Array of integers (user IDs)
-                status: taskData.status || "",               // String
-                priority: taskData.priority || null,         // Integer or null
-                due_date: taskData.due_date || null,         // Unix timestamp in milliseconds
-                due_date_time: taskData.due_date_time || false,// Boolean - whether due_date includes time
-                start_date: taskData.start_date || null,     // Unix timestamp
-                start_date_time: taskData.start_date_time || false,
-                time_estimate: taskData.time_estimate || null, // Integer (in milliseconds or seconds as required)
-                points: taskData.points || null,             // Number
-                notify_all: taskData.notify_all || false,    // Boolean
-                parent: taskData.parent || null,             // Parent task id if creating a subtask
-                links_to: taskData.links_to || null,         // Linked dependency task id
+                // assignees: taskData.assignees || [],         // Array of integers (user IDs)
+                // status: taskData.status || "",               // String
+                // priority: taskData.priority || null,         // Integer or null
+                // due_date: taskData.due_date || null,         // Unix timestamp in milliseconds
+                // due_date_time: taskData.due_date_time || false,// Boolean - whether due_date includes time
+                // start_date: taskData.start_date || null,     // Unix timestamp
+                // start_date_time: taskData.start_date_time || false,
+                // time_estimate: taskData.time_estimate || null, // Integer (in milliseconds or seconds as required)
+                // points: taskData.points || null,             // Number
+                // notify_all: taskData.notify_all || false,    // Boolean
+                // parent: taskData.parent || null,             // Parent task id if creating a subtask
+                // links_to: taskData.links_to || null,         // Linked dependency task id
                 check_required_custom_fields: taskData.check_required_custom_fields || false,
                 // Add additional standard properties as needed,
                 // Example: archived, group_assignees, tags, etc.
