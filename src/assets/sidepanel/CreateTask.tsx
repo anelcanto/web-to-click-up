@@ -1,11 +1,11 @@
 // src/assets/sidepanel/CreateTask.tsx
-import React, { useState, useEffect } from 'react';
-import { RenderField, Field } from '../components/RenderField'; // Adjust the import path if you placed it separately
+import React, { useState } from 'react';
+import { RenderField, Field } from '../components/RenderField';
 
 interface CreateTaskProps {
     onGoToSettings: () => void;
     selectedFieldIds: string[];
-    availableFields: Field[];
+    availableFields: Field[]; // each Field should have at least id, type, and label
 }
 
 export default function CreateTask({ onGoToSettings, selectedFieldIds, availableFields }: CreateTaskProps) {
@@ -16,10 +16,6 @@ export default function CreateTask({ onGoToSettings, selectedFieldIds, available
     // All user-selected fields (standard and custom)
     const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
 
-    useEffect(() => {
-        // Load fieldValues if needed from storage or other sources
-    }, []);
-
     const handleFieldChange = (fieldId: string, newValue: string) => {
         setFieldValues((prev) => ({
             ...prev,
@@ -27,10 +23,34 @@ export default function CreateTask({ onGoToSettings, selectedFieldIds, available
         }));
     };
 
+    // Transform the value based on field type
+    const transformFieldValue = (field: Field, value: string) => {
+        // Always wrap the final value inside an object with key "value"
+        switch (field.type) {
+            case 'date':
+                // Convert to Unix timestamp; include time=true if needed.
+                return { value: new Date(value).getTime(), value_options: { time: true } };
+            case 'checkbox':
+                return { value: value === 'true' };
+            case 'number':
+            case 'currency':
+                return { value: Number(value) };
+            case 'drop_down':
+                // Expect a drop down option id
+                return { value: value };
+            case 'emoji':
+                // For ratings: assume an integer value (with validation performed elsewhere)
+                return { value: parseInt(value, 10) };
+            // Add additional field type conversions as needed.
+            default:
+                // For text, short_text, or other types, use string value.
+                return { value: value };
+        }
+    };
+
     const handleCreateTask = (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Validate Task Name
         if (!taskName.trim()) {
             setStatusMsg('Task Name is required.');
             return;
@@ -38,46 +58,47 @@ export default function CreateTask({ onGoToSettings, selectedFieldIds, available
 
         setStatusMsg('Creating task...');
 
-        // Define which fields are standard and need special handling
-        const standardFields = ['taskDescription', 'taskStatus', 'taskAssignee']; // Adjust as needed
+        // Standard fields mapping (adjust as needed)
+        const standardFields = ['taskDescription', 'taskStatus', 'taskAssignee'];
         const standardFieldData: Record<string, any> = {};
-        const customFieldsPayload: { id: string; value: string }[] = [];
+        const customFieldsPayload: { id: string; value: any }[] = [];
 
         selectedFieldIds.forEach((fieldId) => {
-            const value = fieldValues[fieldId] || '';
+            const rawValue = fieldValues[fieldId] || '';
+            // Find field definition if available (if not a standard field)
+            const fieldDef = availableFields.find((f) => f.id === fieldId);
+
             if (standardFields.includes(fieldId)) {
-                // Map standard fields to their respective ClickUp API properties
                 switch (fieldId) {
                     case 'taskDescription':
-                        standardFieldData['description'] = value;
+                        standardFieldData['description'] = rawValue;
                         break;
                     case 'taskStatus':
-                        standardFieldData['status'] = value;
+                        standardFieldData['status'] = rawValue;
                         break;
                     case 'taskAssignee':
-                        // Assuming value is a user ID; ClickUp API expects an array of user IDs
-                        standardFieldData['assignees'] = [value];
+                        // Wrap assignee id in an array
+                        standardFieldData['assignees'] = [rawValue];
                         break;
                     default:
                         break;
                 }
-            } else {
-                // Treat as custom field
+            } else if (fieldDef) {
+                // Transform the field value based on its type.
+                const transformedData = transformFieldValue(fieldDef, rawValue);
                 customFieldsPayload.push({
                     id: fieldId,
-                    value: value,
+                    ...transformedData,
                 });
             }
         });
 
-        // Construct the payload for ClickUp API
         const taskData: any = {
             name: taskName.trim(),
             ...standardFieldData,
             custom_fields: customFieldsPayload,
         };
 
-        // Send the task data to the background script or API handler
         chrome.runtime.sendMessage(
             {
                 action: 'createTask',
@@ -86,7 +107,6 @@ export default function CreateTask({ onGoToSettings, selectedFieldIds, available
             (response: any) => {
                 if (response?.success) {
                     setStatusMsg('Task created successfully!');
-                    // Reset form fields
                     setTaskName('');
                     setFieldValues({});
                 } else {
@@ -119,29 +139,19 @@ export default function CreateTask({ onGoToSettings, selectedFieldIds, available
                     if (!field) return null;
                     return (
                         <div key={fieldId}>
-                            <RenderField
-                                field={field}
-                                value={fieldValues[fieldId] || ''}
-                                onChange={handleFieldChange}
-                            />
+                            <RenderField field={field} value={fieldValues[fieldId] || ''} onChange={handleFieldChange} />
                         </div>
                     );
                 })}
 
-                <button
-                    type="submit"
-                    className="w-full p-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-                >
+                <button type="submit" className="w-full p-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
                     Create Task
                 </button>
             </form>
 
             <p className="text-sm text-red-600">{statusMsg}</p>
             <hr className="my-4" />
-            <button
-                onClick={onGoToSettings}
-                className="w-full p-2 text-blue-700 underline hover:text-blue-900"
-            >
+            <button onClick={onGoToSettings} className="w-full p-2 text-blue-700 underline hover:text-blue-900">
                 Settings
             </button>
         </div>
