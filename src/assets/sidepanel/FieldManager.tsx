@@ -1,12 +1,7 @@
 // src/assets/sidepanel/FieldManager.tsx
 import React, { useState, useMemo, useEffect, forwardRef, useImperativeHandle } from 'react';
+import { Field } from '../components/RenderField'
 
-interface Field {
-    id: string;
-    name: string;
-    type?: string; // E.g., 'drop_down'
-    options?: { id: string; name: string }[]; // For dropdown options
-}
 
 interface FieldManagerProps {
     availableFields: Field[];

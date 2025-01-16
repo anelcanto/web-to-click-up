@@ -1,12 +1,25 @@
-// public/background.js
+// public/background.s
 import { CLIENT_SECRET } from "./config.js";
 // Listen for messages to create tasks or initiate OAuth
+
+interface FieldOption {
+    id: string;
+    name: string;
+}
+
+interface CustomField {
+    id: string;
+    value: string;
+    type?: string;
+    options?: FieldOption[];
+}
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === "createTask") {
         const taskData = message.payload;
 
         chrome.storage.local.get(['apiToken', 'selectedList', 'teamId', 'fieldMappings'], function (items) {
-            const { apiToken, selectedList, teamId, fieldMappings } = items;
+            // const { apiToken, selectedList, teamId, fieldMappings } = items;
+            const { apiToken, selectedList, fieldMappings } = items;
 
             if (!apiToken || !selectedList) {
                 sendResponse({ success: false, error: 'Missing API token or selected list.' });
@@ -20,45 +33,42 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             // if (teamId) queryParams.append('team_id', teamId);
             const url = `https://api.clickup.com/api/v2/list/${selectedList}/task${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
 
-            // Build the payload for the API using both standard and custom fields.
-            const payload = {
-                name: taskData.name,                      // Required
-                description: taskData.description || "",  // Fallback to description if markdown_content is not provided.
-                check_required_custom_fields: taskData.check_required_custom_fields || false,
-            };
-
-            // Build custom fields payload. The ClickUp API expects an array of objects.
-            const customFields = [];
+            // Build custom fields payload
+            const customFields: CustomField[] = [];
             if (Array.isArray(taskData.custom_fields)) {
                 taskData.custom_fields.forEach(cf => {
                     const mappedId = (fieldMappings && fieldMappings[cf.id]) ? fieldMappings[cf.id] : cf.id;
                     customFields.push({
                         id: mappedId,
                         value: cf.value,
+                        ...(cf.type ? { type: cf.type } : {}),
+                        ...(cf.type_config ? { type_config: cf.type_config } : {}),
                         ...(cf.value_options ? { value_options: cf.value_options } : {}),
                     });
                 });
             }
 
-            // Only add custom_fields if available.
-            if (customFields.length) {
-                payload.custom_fields = customFields;
-            }
+            const payload = {
+                name: taskData.name,
+                description: taskData.description || "",
+                check_required_custom_fields: taskData.check_required_custom_fields || false,
+                ...(customFields.length > 0 && { custom_fields: customFields }),
+            };
 
             console.log("Payload being sent:", payload);
 
-            // Make the POST request to create the task.
+            // Make the API call with the updated payload
             fetch(url, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': apiToken,  // API token provided in Chrome Storage
+                    'Authorization': apiToken,
                 },
                 body: JSON.stringify(payload),
             })
                 .then(response => response.json())
                 .then(data => {
-                    if (data.id) { // Assuming a successful response includes a task id
+                    if (data.id) {
                         sendResponse({ success: true, task: data });
                     } else {
                         sendResponse({ success: false, error: data });
@@ -93,6 +103,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 if (chrome.runtime.lastError) {
                     console.error(chrome.runtime.lastError.message);
                     sendResponse({ success: false, error: chrome.runtime.lastError.message });
+                    return;
+                }
+
+                if (!redirectUrl) {
+                    sendResponse({ success: false, error: "No redirect URL received." });
                     return;
                 }
 

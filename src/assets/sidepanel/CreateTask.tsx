@@ -116,8 +116,8 @@ export default function CreateTask({ onGoToSettings, selectedFieldIds, available
         setStatusMsg('Creating task...');
 
         const standardFields = ['taskDescription'] //, 'taskStatus', 'taskAssignee'];
-        const standardFieldData: Record<string, any> = {};
-        const customFieldsPayload: { id: string; value: any }[] = [];
+        const standardFieldData: Record<string, string | string[]> = {};
+        const customFieldsPayload: { id: string; value: string }[] = [];
 
         selectedFieldIds.forEach((fieldId) => {
             const rawValue = fieldValues[fieldId] || '';
@@ -149,16 +149,27 @@ export default function CreateTask({ onGoToSettings, selectedFieldIds, available
             }
         });
 
-        const taskData: any = {
+        interface TaskData {
+            name: string;
+            description?: string;
+            custom_fields: Array<{ id: string; value: string }>;
+        }
+
+        const taskData: TaskData = {
             name: taskName.trim(),
             ...standardFieldData,
             custom_fields: customFieldsPayload,
         };
 
         console.log('[CreateTask] Final taskData being sent to background:', taskData);
+        interface TaskResponse {
+            success?: boolean;
+            error?: string;
+        }
+
         chrome.runtime.sendMessage(
             { action: 'createTask', payload: taskData },
-            (response: any) => {
+            (response: TaskResponse) => {
                 console.log('[CreateTask] Background script response:', response);
                 if (response?.success) {
                     setStatusMsg('Task created successfully!');

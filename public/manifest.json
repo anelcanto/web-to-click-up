@@ -13,8 +13,7 @@
         "default_title": "Click to open panel"
     },
     "background": {
-        "service_worker": "background.js",
-        "type": "module"
+        "service_worker": "background.ts"
     },
     "host_permissions": [
         "https://api.clickup.com/"

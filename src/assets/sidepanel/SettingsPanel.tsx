@@ -3,6 +3,7 @@
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import FieldManager, { FieldManagerRef } from './FieldManager';
+import { Field } from '../components/RenderField'
 
 
 interface SettingsPanelProps {
@@ -47,12 +48,7 @@ interface List {
 }
 
 
-interface Field {
-    id: string;
-    name: string;
-    type?: string; // E.g., 'drop_down'
-    options?: { id: string; name: string }[]; // For dropdown options
-}
+
 
 
 
@@ -68,10 +64,6 @@ export default function SettingsPanel({
     const [folders, setFolders] = useState<Folder[]>([]);
     const [lists, setLists] = useState<List[]>([]);
 
-
-
-    // UI states
-    const [apiTokenVisible, setApiTokenVisible] = useState(false);
     const [settingsStatus, setSettingsStatus] = useState('');
 
     // Combined Settings
@@ -238,11 +230,11 @@ export default function SettingsPanel({
             .then((res) => res.json())
             .then((data) => {
                 console.log("data.fields", data.fields)
-                const newAvailableFields = data.fields?.map((field: any) => ({
+                const newAvailableFields = data.fields?.map((field: { id: string; name: string; type: string; type_config?: { options?: { id: string; name: string }[] } }) => ({
                     id: field.id,
                     name: field.name,
                     type: field.type,
-                    options: field.type == 'drop_down' ? field.type_config.options : undefined,
+                    options: field.type == 'drop_down' ? field.type_config?.options : undefined,
                 })) || [];
                 updateFields(selectedFieldIds, newAvailableFields);
             })

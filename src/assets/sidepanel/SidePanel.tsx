@@ -2,11 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import CreateTask from './CreateTask';
 import SettingsPanel from './SettingsPanel';
+import { Field } from '../components/RenderField'
 
-interface Field {
-    id: string;
-    name: string;
-}
 
 export default function SidePanel() {
     const [isSettings, setIsSettings] = useState(false);
