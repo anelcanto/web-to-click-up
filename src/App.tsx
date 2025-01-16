@@ -1,6 +1,6 @@
 // import { useState } from 'react'
 import './App.css'
-import SidePanel from './assets/sidepanel/SidePanel'
+import SidePanel from './sidepanel/SidePanel'
 
 function App() {
   return (
