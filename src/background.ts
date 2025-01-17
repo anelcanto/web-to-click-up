@@ -1,18 +1,21 @@
-// public/background.s
-import { CLIENT_SECRET } from "./config.js";
-// Listen for messages to create tasks or initiate OAuth
+import { CLIENT_SECRET } from "./config";
 
+// Listen for messages to create tasks or initiate OAuth
 interface FieldOption {
     id: string;
     name: string;
 }
-
 interface CustomField {
-    id: string;
-    value: string;
-    type?: string;
-    options?: FieldOption[];
+    id: string; // Unique identifier of the custom field
+    name: string; // Name of the custom field
+    type: string; // Type of the custom field (e.g., "text", "number", etc.)
+    type_config: Record<string, unknown>;
+    date_created: string; // Creation timestamp as a string
+    hide_from_guests: boolean; // Whether the field is hidden from guest users
+    value?: string; // Optional: The value assigned to the custom field on a task
+    value_options?: FieldOption[]; // Optional: Options for dropdown/multi-select fields
 }
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === "createTask") {
         const taskData = message.payload;
@@ -36,13 +39,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             // Build custom fields payload
             const customFields: CustomField[] = [];
             if (Array.isArray(taskData.custom_fields)) {
-                taskData.custom_fields.forEach(cf => {
+                taskData.custom_fields.forEach((cf: CustomField) => {
                     const mappedId = (fieldMappings && fieldMappings[cf.id]) ? fieldMappings[cf.id] : cf.id;
                     customFields.push({
                         id: mappedId,
-                        value: cf.value,
-                        ...(cf.type ? { type: cf.type } : {}),
-                        ...(cf.type_config ? { type_config: cf.type_config } : {}),
+                        name: cf.name || "",
+                        type: cf.type || "text",
+                        type_config: cf.type_config || {},
+                        date_created: cf.date_created || new Date().toISOString(),
+                        hide_from_guests: cf.hide_from_guests || false,
+                        value: cf.value || "",
                         ...(cf.value_options ? { value_options: cf.value_options } : {}),
                     });
                 });
