@@ -1,8 +1,7 @@
-// src/assets/sidepanel/LocationSelectors.tsx
+// src/components/LocationSelectors.tsx
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Field } from './RenderField';
 
-// Types for data
 export interface Team {
     id: string;
     name: string;
@@ -23,7 +22,7 @@ export interface List {
     name: string;
 }
 
-// This matches what you use in SettingsPanel
+// These settings should match the values you expect from your SettingsPanel
 interface Settings {
     apiToken?: string;
     selectedTeam?: string;
@@ -33,33 +32,30 @@ interface Settings {
     fieldMappings?: Record<string, string>;
 }
 
-// Props for LocationSelectors
 interface LocationSelectorsProps {
-    settings: Settings;                              // So we can read apiToken, etc.
+    settings: Settings;
     setSettings: React.Dispatch<React.SetStateAction<Settings>>;
-    selectedFieldIds: string[];                      // From parent
+    selectedFieldIds: string[];
     updateFields: (selectedFieldIds: string[], availableFields: Field[]) => void;
 }
 
-// The component
 export default function LocationSelectors({
     settings,
     setSettings,
     selectedFieldIds,
     updateFields,
 }: LocationSelectorsProps) {
-    // Local state for the location data
     const [teams, setTeams] = useState<Team[]>([]);
     const [spaces, setSpaces] = useState<Space[]>([]);
     const [folders, setFolders] = useState<Folder[]>([]);
     const [lists, setLists] = useState<List[]>([]);
 
-    // Used to prevent repeatedly loading custom fields when the list is already selected
     const hasLoadedCustomFields = useRef(false);
 
-    /**
-     * Fetch teams whenever apiToken is available
-     */
+    // -------------------------------
+    // Existing useEffects for fetching data
+    // -------------------------------
+
     useEffect(() => {
         if (!settings.apiToken) return;
 
@@ -76,28 +72,18 @@ export default function LocationSelectors({
             .catch((err) => console.error('Error fetching teams:', err));
     }, [settings.apiToken]);
 
-    /**
-     * Handle user selecting a Team
-     */
     const handleSelectTeam = useCallback(
         (teamId: string) => {
-            // Update selectedTeam in the parent
             setSettings((prev) => ({
                 ...prev,
                 selectedTeam: teamId,
-                // Clear out old selections
-                // selectedSpace: '',
-                // selectedFolder: null,
-                // selectedList: '',
             }));
 
-            // If no team is selected, clear out spaces
             if (!teamId) {
                 setSpaces([]);
                 return;
             }
 
-            // Fetch spaces for the chosen team
             fetch(`https://api.clickup.com/api/v2/team/${teamId}/space`, {
                 headers: { Authorization: settings.apiToken || '' },
             })
@@ -110,26 +96,17 @@ export default function LocationSelectors({
         [settings.apiToken, setSettings]
     );
 
-    /**
-     * If a saved `selectedTeam` is present, refetch its spaces on initial load
-     */
     useEffect(() => {
         if (teams.length > 0 && settings.selectedTeam) {
             handleSelectTeam(settings.selectedTeam);
         }
     }, [teams, settings.selectedTeam, handleSelectTeam]);
 
-    /**
-     * Handle user selecting a Space
-     */
     const handleSelectSpace = useCallback(
         (spaceId: string) => {
-            // If the user changes the space, also reset folder + list
             setSettings((prev) => ({
                 ...prev,
                 selectedSpace: spaceId,
-                // selectedFolder: null,
-                // selectedList: '',
             }));
 
             if (!spaceId) {
@@ -138,7 +115,6 @@ export default function LocationSelectors({
                 return;
             }
 
-            // 1. Fetch folders
             fetch(`https://api.clickup.com/api/v2/space/${spaceId}/folder?archived=false`, {
                 headers: { Authorization: settings.apiToken || '' },
             })
@@ -148,7 +124,6 @@ export default function LocationSelectors({
                 })
                 .catch((err) => console.error('Error fetching folders:', err));
 
-            // 2. Fetch folderless lists
             fetch(`https://api.clickup.com/api/v2/space/${spaceId}/list?archived=false`, {
                 headers: { Authorization: settings.apiToken || '' },
             })
@@ -161,24 +136,17 @@ export default function LocationSelectors({
         [settings.apiToken, setSettings]
     );
 
-    /**
-     * If there's already a selected space, fetch folders/lists for it
-     */
     useEffect(() => {
         if (spaces.length > 0 && settings.selectedSpace) {
             handleSelectSpace(settings.selectedSpace);
         }
     }, [spaces, settings.selectedSpace, handleSelectSpace]);
 
-    /**
-     * Handle user selecting a Folder
-     */
     const handleSelectFolder = useCallback(
         (folderId: string) => {
             setSettings((prev) => ({
                 ...prev,
                 selectedFolder: folderId,
-                // selectedList: '', // reset list if folder changes
             }));
 
             if (!folderId) {
@@ -198,18 +166,12 @@ export default function LocationSelectors({
         [settings.apiToken, setSettings]
     );
 
-    /**
-     * If there's a saved selectedFolder, fetch lists for it
-     */
     useEffect(() => {
         if (folders.length > 0 && settings.selectedFolder) {
             handleSelectFolder(settings.selectedFolder);
         }
     }, [folders, settings.selectedFolder, handleSelectFolder]);
 
-    /**
-     * Handle user selecting a List (and fetch custom fields)
-     */
     const handleSelectList = useCallback(
         (listId: string) => {
             setSettings((prev) => ({
@@ -219,7 +181,6 @@ export default function LocationSelectors({
 
             if (!listId) return;
 
-            // Fetch custom fields for the chosen list
             fetch(`https://api.clickup.com/api/v2/list/${listId}/field`, {
                 headers: { Authorization: settings.apiToken || '' },
             })
@@ -236,11 +197,13 @@ export default function LocationSelectors({
                             id: field.id,
                             name: field.name,
                             type: field.type,
-                            options: field.type === 'drop_down' ? field.type_config?.options : undefined,
+                            options:
+                                field.type === 'drop_down'
+                                    ? field.type_config?.options
+                                    : undefined,
                         })
                     ) || [];
 
-                    // Update fields in parent
                     updateFields(selectedFieldIds, newAvailableFields);
                 })
                 .catch((err) => console.error('Error fetching custom fields:', err));
@@ -248,38 +211,58 @@ export default function LocationSelectors({
         [settings.apiToken, selectedFieldIds, setSettings, updateFields]
     );
 
-    /**
-     * If there's already a selectedList, load custom fields just once
-     */
     useEffect(() => {
-        console.log('[LocationSelectors] useEffect loading ')
+        console.log('[LocationSelectors] useEffect loading');
         if (!settings.selectedList) return;
-        console.log('[LocationSelectors] useEffect , settings.selectedList FOUND ')
-
         if (!hasLoadedCustomFields.current) {
             handleSelectList(settings.selectedList);
             hasLoadedCustomFields.current = true;
         }
     }, [settings.selectedList, handleSelectList]);
 
-    // Render the dropdowns
+    // ---------------------------------------
+    // New useEffect: Reset UI when location settings are cleared
+    // ---------------------------------------
+    useEffect(() => {
+        // When any of the key location settings are undefined, reset the local state.
+        if (
+            settings.selectedTeam === undefined &&
+            settings.selectedSpace === undefined &&
+            settings.selectedFolder === undefined &&
+            settings.selectedList === undefined
+        ) {
+            // Clear out all the local states for teams, spaces, folders, and lists.
+            setTeams([]);
+            setSpaces([]);
+            setFolders([]);
+            setLists([]);
+            // Reset the ref for custom fields loading if necessary.
+            hasLoadedCustomFields.current = false;
+        }
+    }, [
+        settings.selectedTeam,
+        settings.selectedSpace,
+        settings.selectedFolder,
+        settings.selectedList,
+    ]);
+
+    // ---------------------------------------
+    // Render the selectors
+    // ---------------------------------------
     return (
         <div>
             {/* Teams */}
-            < select
+            <select
                 value={settings.selectedTeam || ''}
-                onChange={(e) => handleSelectTeam(e.target.value)
-                }
+                onChange={(e) => handleSelectTeam(e.target.value)}
                 className="w-full p-2 border rounded mt-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-                <option value="" > Select a Workspace...</option>
-                {
-                    teams.map((team) => (
-                        <option key={team.id} value={team.id} >
-                            {team.name}
-                        </option>
-                    ))
-                }
+                <option value="">Select a Workspace...</option>
+                {teams.map((team) => (
+                    <option key={team.id} value={team.id}>
+                        {team.name}
+                    </option>
+                ))}
             </select>
 
             {/* Spaces */}
@@ -288,14 +271,12 @@ export default function LocationSelectors({
                 onChange={(e) => handleSelectSpace(e.target.value)}
                 className="w-full p-2 border rounded mt-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-                <option value="" > Select a Space...</option>
-                {
-                    spaces.map((space) => (
-                        <option key={space.id} value={space.id} >
-                            {space.name}
-                        </option>
-                    ))
-                }
+                <option value="">Select a Space...</option>
+                {spaces.map((space) => (
+                    <option key={space.id} value={space.id}>
+                        {space.name}
+                    </option>
+                ))}
             </select>
 
             {/* Folders */}
@@ -304,14 +285,12 @@ export default function LocationSelectors({
                 onChange={(e) => handleSelectFolder(e.target.value)}
                 className="w-full p-2 border rounded mt-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-                <option value="" > (No Folder)</option>
-                {
-                    folders.map((folder) => (
-                        <option key={folder.id} value={folder.id} >
-                            {folder.name}
-                        </option>
-                    ))
-                }
+                <option value="">(No Folder)</option>
+                {folders.map((folder) => (
+                    <option key={folder.id} value={folder.id}>
+                        {folder.name}
+                    </option>
+                ))}
             </select>
 
             {/* Lists */}
@@ -320,14 +299,12 @@ export default function LocationSelectors({
                 onChange={(e) => handleSelectList(e.target.value)}
                 className="w-full p-2 border rounded mt-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-                <option value="" > Select a List...</option>
-                {
-                    lists.map((list) => (
-                        <option key={list.id} value={list.id} >
-                            {list.name}
-                        </option>
-                    ))
-                }
+                <option value="">Select a List...</option>
+                {lists.map((list) => (
+                    <option key={list.id} value={list.id}>
+                        {list.name}
+                    </option>
+                ))}
             </select>
         </div>
     );
