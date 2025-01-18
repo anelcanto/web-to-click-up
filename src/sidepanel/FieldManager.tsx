@@ -16,7 +16,7 @@ interface FieldManagerProps {
     onSave: (selectedFieldIds: string[], availableFields: Field[]) => void;
 }
 export interface FieldManagerRef {
-    handleSave: () => void;
+    handleSave: () => Promise<{ finalIds: string[]; finalFields: Field[] }>;
 }
 
 
@@ -56,21 +56,40 @@ const FieldManager = forwardRef<FieldManagerRef, FieldManagerProps>(({
         handleSave
     }));
 
+    // function handleSave() {
+    //     const finalFields = selectedFields
+    //         .filter((id) => id.trim() !== '')
+    //         .map((id) => {
+    //             const field = availableFields.find((f) => f.id === id);
+    //             return field ? { ...field } : null;
+    //         })
+    //         .filter(Boolean) as Field[];
 
-    function handleSave() {
-        const finalFields = selectedFields
-            .filter((id) => id.trim() !== '')
-            .map((id) => {
-                const field = availableFields.find((f) => f.id === id);
-                return field ? { ...field } : null;
-            })
-            .filter(Boolean) as Field[];
+    //     onSave(
+    //         finalFields.map((f) => f.id),
+    //         finalFields // Include options here
+    //     );
+    // }
 
-        onSave(
-            finalFields.map((f) => f.id),
-            finalFields // Include options here
-        );
-    }
+    // FieldManager.tsx
+
+    const handleSave = () => {
+        return new Promise<{ finalIds: string[], finalFields: Field[] }>((resolve) => {
+            const finalFields = selectedFields
+                .filter(id => id.trim() !== '')
+                .map(id => {
+                    const field = availableFields.find(f => f.id === id);
+                    return field ? { ...field } : null;
+                })
+                .filter(Boolean) as Field[];
+            resolve({
+                finalIds: finalFields.map(f => f.id),
+                finalFields,
+            });
+            // Optionally, you can also invoke onSave immediately if needed
+            onSave(finalFields.map(f => f.id), finalFields);
+        });
+    };
 
     return (
         <div className="mt-4">

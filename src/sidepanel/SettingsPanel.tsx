@@ -68,48 +68,36 @@ export default function SettingsPanel({
         ...availableFields,
     ];
 
-    // Save settings (including fields) to Chrome storage
-    function saveSettings() {
-        // Call handleSave from FieldManager to ensure fields are up-to-date
-        fieldManagerRef.current?.handleSave();
 
-        // Minimal fields data for saving
-        const minimalFields = combinedFields.map(field => ({
-            id: field.id,
-            name: field.name,
-            type: field.type || 'text',
-            options: field.options,
-        }));
-
-        console.log('settings to being saved', settings)
-        // Now persist to storage
-        chrome.storage.local.set(
-            {
-                apiToken: settings.apiToken,
-                selectedTeam: settings.selectedTeam,
-                selectedSpace: settings.selectedSpace,
-                selectedFolder: settings.selectedFolder,
-                selectedList: settings.selectedList,
-                fieldMappings: settings.fieldMappings,
-                selectedFieldIds: selectedFieldIds,
-                availableFields: minimalFields.map((field) => ({
-                    id: field.id,
-                    name: field.name,
-                    type: field.type || 'text',
-                    options:
-                        field.type === 'drop_down'
-                            ? field.options?.map(opt => ({ id: opt.id, name: opt.name }))
-                            : undefined,
-                })),
-            },
-            () => {
-                if (chrome.runtime.lastError) {
-                    console.error('Error saving settings:', chrome.runtime.lastError);
-                } else {
-                    setSettingsStatus('Settings saved.');
-                }
+    async function saveSettings() {
+        if (fieldManagerRef.current?.handleSave) {
+            const { finalIds, finalFields } = await fieldManagerRef.current.handleSave();
+            updateFields(finalIds, finalFields);
+        }
+        // Build minimalFields etc...
+        chrome.storage.local.set({
+            apiToken: settings.apiToken,
+            selectedTeam: settings.selectedTeam,
+            selectedSpace: settings.selectedSpace,
+            selectedFolder: settings.selectedFolder,
+            selectedList: settings.selectedList,
+            fieldMappings: settings.fieldMappings,
+            selectedFieldIds: selectedFieldIds,
+            availableFields: combinedFields.map(field => ({
+                id: field.id,
+                name: field.name,
+                type: field.type || 'text',
+                options: field.type === 'drop_down'
+                    ? field.options?.map(opt => ({ id: opt.id, name: opt.name }))
+                    : undefined,
+            })),
+        }, () => {
+            if (chrome.runtime.lastError) {
+                console.error('Error saving settings:', chrome.runtime.lastError);
+            } else {
+                setSettingsStatus('Settings saved.');
             }
-        );
+        });
     }
 
     // Example "Connect ClickUp" button (OAuth) – optional
