@@ -1,5 +1,4 @@
 // src/assets/sidepanel/SettingsPanel.tsx
-/* eslint no-unused-vars: "off" */
 
 import React, { useEffect, useState, useRef } from 'react';
 import FieldManager, { FieldManagerRef } from './FieldManager';
@@ -71,6 +70,7 @@ export default function SettingsPanel({
 
 
     async function saveSettings() {
+        console.log('fieldManagerRef.current', fieldManagerRef.current)
         if (fieldManagerRef.current?.handleSave) {
             const { finalIds, finalFields } = await fieldManagerRef.current.handleSave();
             updateFields(finalIds, finalFields);

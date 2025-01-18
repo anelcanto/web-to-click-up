@@ -1,5 +1,4 @@
 // src/assets/sidepanel/LocationSelectors.tsx
-/* eslint no-unused-vars: "off" */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Field } from './RenderField';
 
