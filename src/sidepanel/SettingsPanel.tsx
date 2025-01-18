@@ -70,12 +70,17 @@ export default function SettingsPanel({
 
 
     async function saveSettings() {
-        console.log('fieldManagerRef.current', fieldManagerRef.current)
+        let finalIds = selectedFieldIds;
+        let finalFields = availableFields;
+
         if (fieldManagerRef.current?.handleSave) {
-            const { finalIds, finalFields } = await fieldManagerRef.current.handleSave();
-            updateFields(finalIds, finalFields);
+            const { finalIds: ids, finalFields: fields } = await fieldManagerRef.current.handleSave();
+            // Use the returned values to update state and storage
+            updateFields(ids, fields);
+            finalIds = ids;
+            finalFields = fields;
         }
-        // Build minimalFields etc...
+
         chrome.storage.local.set({
             apiToken: settings.apiToken,
             selectedTeam: settings.selectedTeam,
@@ -83,8 +88,9 @@ export default function SettingsPanel({
             selectedFolder: settings.selectedFolder,
             selectedList: settings.selectedList,
             fieldMappings: settings.fieldMappings,
-            selectedFieldIds: selectedFieldIds,
-            availableFields: combinedFields.map(field => ({
+            // Use the freshly returned values here
+            selectedFieldIds: finalIds,
+            availableFields: finalFields.map(field => ({
                 id: field.id,
                 name: field.name,
                 type: field.type || 'text',
@@ -100,7 +106,6 @@ export default function SettingsPanel({
             }
         });
     }
-
 
 
     return (
@@ -124,9 +129,7 @@ export default function SettingsPanel({
                     ref={fieldManagerRef}
                     availableFields={combinedFields}
                     initialSelectedFields={selectedFieldIds}
-                    onSave={(finalIds: string[], newAvailableFields: Field[]) => {
-                        updateFields(finalIds, newAvailableFields);
-                    }}
+
                 />
             )}
 

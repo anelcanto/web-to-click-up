@@ -6,15 +6,9 @@ import { Field } from '../components/RenderField'
 interface FieldManagerProps {
     availableFields: Field[];
     initialSelectedFields: string[];
-    onSave: (selectedFieldIds: string[], availableFields: Field[]) => void;
 }
 
 
-interface FieldManagerProps {
-    availableFields: Field[];
-    initialSelectedFields: string[];
-    onSave: (selectedFieldIds: string[], availableFields: Field[]) => void;
-}
 export interface FieldManagerRef {
     handleSave: () => Promise<{ finalIds: string[]; finalFields: Field[] }>;
 }
@@ -22,8 +16,7 @@ export interface FieldManagerRef {
 
 const FieldManager = forwardRef<FieldManagerRef, FieldManagerProps>(({
     availableFields,
-    initialSelectedFields,
-    onSave,
+    initialSelectedFields
 }, ref) => {
     const [selectedFields, setSelectedFields] = useState<string[]>(initialSelectedFields);
 
@@ -86,8 +79,6 @@ const FieldManager = forwardRef<FieldManagerRef, FieldManagerProps>(({
                 finalIds: finalFields.map(f => f.id),
                 finalFields,
             });
-            // Optionally, you can also invoke onSave immediately if needed
-            onSave(finalFields.map(f => f.id), finalFields);
         });
     };
 
