@@ -1,5 +1,4 @@
-// src/assets/components/RenderField.tsx
-import React, { useEffect } from 'react';
+import React, { useCallback, useEffect } from 'react';
 
 interface FieldOption {
     id: string;
@@ -22,46 +21,90 @@ interface RenderFieldProps {
     onUrlOptionChange?: (fieldId: string, option: string) => void;
 }
 
-export const RenderField: React.FC<RenderFieldProps> = ({ field, value, onChange, urlOption, onUrlOptionChange }) => {
-    const inputClass = "w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500";
-    console.log(`[RenderField] Rendering field id: ${field.id}, type: ${field.type}, current value: ${value}`);
+export const RenderField: React.FC<RenderFieldProps> = ({
+    field,
+    value,
+    onChange,
+    urlOption,
+    onUrlOptionChange,
+}) => {
+    const inputClass =
+        "w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500";
 
-    // useEffect for URL fetching when "current" is selected.
-    useEffect(() => {
-        if (field.type === 'url' && urlOption === "current") {
-            console.log(`[RenderField/useEffect] URL option is "current" for field ${field.id}. Fetching current tab URL...`);
-            chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-                console.log(`[RenderField/useEffect] chrome.tabs.query result for field ${field.id}:`, tabs);
-                if (tabs && tabs.length > 0 && tabs[0].url) {
-                    const fetchedUrl = tabs[0].url;
-                    // Only trigger onChange if the fetched URL differs from the current value.
-                    if (fetchedUrl !== value) {
-                        console.log(`[RenderField/useEffect] Fetched URL "${fetchedUrl}" differs from current value "${value}". Calling onChange...`);
-                        onChange(field.id, fetchedUrl);
-                    } else {
-                        console.log(`[RenderField/useEffect] Fetched URL is identical to current value. No action needed.`);
-                    }
-                } else {
-                    console.warn(`[RenderField/useEffect] No URL found for field ${field.id}.`);
+    // Wrap the function in useCallback so its identity is stable between renders.
+    const fetchCurrentTabUrl = useCallback(() => {
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (tabs && tabs.length > 0 && tabs[0].url) {
+                const fetchedUrl = tabs[0].url;
+                // Update the URL only if it's different
+                if (fetchedUrl !== value) {
+                    onChange(field.id, fetchedUrl);
                 }
-            });
+            }
+        });
+    }, [field.id, onChange, value]);
+
+    // Listen for changes in "urlOption". If it's "current", fetch the URL.
+    useEffect(() => {
+        if (field.type === "url" && urlOption === "current") {
+            fetchCurrentTabUrl();
         }
-    }, [urlOption, field, onChange, value]);
+    }, [urlOption, field.type, fetchCurrentTabUrl]);
+
+    // Listen for tab activation events.
+    useEffect(() => {
+        if (field.type !== "url" || urlOption !== "current") return;
+
+        const handleTabActivated = () => {
+            fetchCurrentTabUrl();
+        };
+
+        // Add listener for tab activation.
+        chrome.tabs.onActivated.addListener(handleTabActivated);
+
+        // Cleanup the listener on unmount or when dependencies change.
+        return () => {
+            chrome.tabs.onActivated.removeListener(handleTabActivated);
+        };
+    }, [field.type, urlOption, fetchCurrentTabUrl]);
+
+    // Listen for tab update events (e.g., page refresh) and update URL when the tab finishes loading.
+    useEffect(() => {
+        if (field.type !== "url" || urlOption !== "current") return;
+
+        const handleTabUpdated = (
+            tabId: number,
+            changeInfo: chrome.tabs.TabChangeInfo,
+            tab: chrome.tabs.Tab
+        ) => {
+            // If the tab finished loading and is active, refresh the URL.
+            if (changeInfo.status === 'complete' && tab.active) {
+                fetchCurrentTabUrl();
+            }
+        };
+
+        // Add listener for tab updates.
+        chrome.tabs.onUpdated.addListener(handleTabUpdated);
+
+        // Cleanup the listener when the component unmounts or dependencies change.
+        return () => {
+            chrome.tabs.onUpdated.removeListener(handleTabUpdated);
+        };
+    }, [field.type, urlOption, fetchCurrentTabUrl]);
 
     // Handler for when the URL option select changes.
     const handleUrlOptionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const selectedOption = e.target.value;
-        console.log(`[RenderField] handleUrlOptionChange: Selected "${selectedOption}" for field ${field.id}`);
         if (onUrlOptionChange) {
             onUrlOptionChange(field.id, selectedOption);
         }
-        // If switching back to manual, clear the URL if desired.
+        // When switching to manual, you can clear the URL if desired.
         if (selectedOption === "manual") {
-            onChange(field.id, '');
+            onChange(field.id, "");
         }
     };
 
-    if (field.type === 'url') {
+    if (field.type === "url") {
         return (
             <div className="space-y-1">
                 <label className="block text-sm font-medium mb-1">{field.name}</label>
@@ -70,10 +113,7 @@ export const RenderField: React.FC<RenderFieldProps> = ({ field, value, onChange
                     placeholder={field.name}
                     value={value}
                     disabled={urlOption === "current"}
-                    onChange={(e) => {
-                        console.log(`[RenderField] Manual URL change for field ${field.id}:`, e.target.value);
-                        onChange(field.id, e.target.value);
-                    }}
+                    onChange={(e) => onChange(field.id, e.target.value)}
                     className={inputClass}
                 />
                 <select
@@ -88,7 +128,7 @@ export const RenderField: React.FC<RenderFieldProps> = ({ field, value, onChange
         );
     }
 
-    // Other field types (unchanged)
+    // Other field types remain unchanged
     switch (field.type) {
         case 'drop_down':
             return (
@@ -170,7 +210,9 @@ export const RenderField: React.FC<RenderFieldProps> = ({ field, value, onChange
                     <input
                         type="checkbox"
                         checked={value === 'true'}
-                        onChange={(e) => onChange(field.id, e.target.checked.toString())}
+                        onChange={(e) =>
+                            onChange(field.id, e.target.checked.toString())
+                        }
                         className="mr-2"
                     />
                     <span>{field.name}</span>
