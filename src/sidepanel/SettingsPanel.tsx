@@ -6,6 +6,7 @@ import FieldManager, { FieldManagerRef } from './FieldManager';
 import { Field } from '../components/RenderField';
 import LocationSelectors from '../components/LocationSelectors'; // <-- Import our new component
 import { Settings } from '../types';
+import OAuthButton from '../components/OAuthButton';
 
 interface SettingsPanelProps {
     onGoToCreateTask: () => void;
@@ -100,32 +101,14 @@ export default function SettingsPanel({
         });
     }
 
-    // Example "Connect ClickUp" button (OAuth) – optional
-    const handleConnectClickup = () => {
-        chrome.runtime.sendMessage({ action: 'startOAuth' }, (response) => {
-            if (response.success) {
-                console.log('OAuth successful! Access token:', response.accessToken);
-                // Save the token in your extension state or local storage
-                setSettings((prev) => ({ ...prev, apiToken: response.accessToken }));
-            } else {
-                console.error('OAuth failed:', response.error);
-            }
-        });
-    };
+
 
     return (
         <div className="p-4 w-72 font-sans">
             <h3 className="text-lg font-bold mb-4">Settings</h3>
 
-            {/* Connect ClickUp (OAuth) */}
-            <div className="flex items-center space-x-2 mb-2">
-                <button
-                    onClick={handleConnectClickup}
-                    className="w-full p-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-                >
-                    Connect ClickUp
-                </button>
-            </div>
+
+            <OAuthButton setSettings={setSettings} />
 
             {/* Location Selectors (teams/spaces/folders/lists) */}
             <LocationSelectors
