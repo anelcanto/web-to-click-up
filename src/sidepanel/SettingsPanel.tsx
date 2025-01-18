@@ -113,7 +113,7 @@ export default function SettingsPanel({
             <h3 className="text-lg font-bold mb-4">Settings</h3>
 
 
-            <OAuthButton setSettings={setSettings} />
+            <OAuthButton setSettings={setSettings} settings={settings} />
 
             {/* Location Selectors (teams/spaces/folders/lists) */}
             <LocationSelectors
