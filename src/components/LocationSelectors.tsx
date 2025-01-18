@@ -87,9 +87,9 @@ export default function LocationSelectors({
                 ...prev,
                 selectedTeam: teamId,
                 // Clear out old selections
-                selectedSpace: '',
-                selectedFolder: null,
-                selectedList: '',
+                // selectedSpace: '',
+                // selectedFolder: null,
+                // selectedList: '',
             }));
 
             // If no team is selected, clear out spaces
@@ -129,8 +129,8 @@ export default function LocationSelectors({
             setSettings((prev) => ({
                 ...prev,
                 selectedSpace: spaceId,
-                selectedFolder: null,
-                selectedList: '',
+                // selectedFolder: null,
+                // selectedList: '',
             }));
 
             if (!spaceId) {
@@ -179,7 +179,7 @@ export default function LocationSelectors({
             setSettings((prev) => ({
                 ...prev,
                 selectedFolder: folderId,
-                selectedList: '', // reset list if folder changes
+                // selectedList: '', // reset list if folder changes
             }));
 
             if (!folderId) {
@@ -253,7 +253,10 @@ export default function LocationSelectors({
      * If there's already a selectedList, load custom fields just once
      */
     useEffect(() => {
+        console.log('[LocationSelectors] useEffect loading ')
         if (!settings.selectedList) return;
+        console.log('[LocationSelectors] useEffect , settings.selectedList FOUND ')
+
         if (!hasLoadedCustomFields.current) {
             handleSelectList(settings.selectedList);
             hasLoadedCustomFields.current = true;

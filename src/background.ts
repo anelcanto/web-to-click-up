@@ -20,8 +20,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === "createTask") {
         const taskData = message.payload;
 
-        chrome.storage.local.get(['apiToken', 'selectedList', 'teamId', 'fieldMappings'], function (items) {
-            // const { apiToken, selectedList, teamId, fieldMappings } = items;
+        chrome.storage.local.get(['apiToken', 'selectedList', 'selectedTeam', 'fieldMappings'], function (items) {
+            // const { apiToken, selectedList, selectedTeam, fieldMappings } = items;
             const { apiToken, selectedList, fieldMappings } = items;
 
             if (!apiToken || !selectedList) {
@@ -33,7 +33,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             const queryParams = new URLSearchParams();
             // Uncomment these lines if using custom task ids
             // queryParams.append('custom_task_ids', 'true');
-            // if (teamId) queryParams.append('team_id', teamId);
+            // if (selectedTeam) queryParams.append('team_id', selectedTeam);
             const url = `https://api.clickup.com/api/v2/list/${selectedList}/task${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
 
             // Build custom fields payload

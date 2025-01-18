@@ -5,6 +5,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import FieldManager, { FieldManagerRef } from './FieldManager';
 import { Field } from '../components/RenderField';
 import LocationSelectors from '../components/LocationSelectors'; // <-- Import our new component
+import { Settings } from '../types';
 
 interface SettingsPanelProps {
     onGoToCreateTask: () => void;
@@ -13,15 +14,7 @@ interface SettingsPanelProps {
     updateFields: (selectedFieldIds: string[], availableFields: Field[]) => void;
 }
 
-// The settings type
-interface Settings {
-    apiToken?: string;
-    selectedTeam?: string;
-    selectedSpace?: string;
-    selectedFolder?: string | null;
-    selectedList?: string;
-    fieldMappings?: Record<string, string>;
-}
+
 
 export default function SettingsPanel({
     onGoToCreateTask,
@@ -50,7 +43,7 @@ export default function SettingsPanel({
         chrome.storage.local.get(
             ['apiToken', 'selectedTeam', 'selectedSpace', 'selectedFolder', 'selectedList', 'fieldMappings'],
             (items) => {
-                console.log('Loaded items:', items);
+                console.log("[SettingsPanel Loaded items: settings[] ", items);
                 setSettings({
                     apiToken: items.apiToken || '',
                     selectedTeam: items.selectedTeam || '',
@@ -88,6 +81,7 @@ export default function SettingsPanel({
             options: field.options,
         }));
 
+        console.log('settings to being saved', settings)
         // Now persist to storage
         chrome.storage.local.set(
             {
