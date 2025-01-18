@@ -14,8 +14,9 @@ export default function OAuthButton({ settings, setSettings }: SettingsProp) {
         chrome.runtime.sendMessage({ action: "startOAuth" }, (response) => {
             if (response && response.success) {
                 console.log("OAuth successful! Access token:", response.accessToken);
-                // Save the token in your extension state
+                // Save the token in your extension state and Chrome storage
                 setSettings((prev) => ({ ...prev, apiToken: response.accessToken }));
+                chrome.storage.local.set({ apiToken: response.accessToken });
             } else {
                 console.error("OAuth failed:", response ? response.error : "No response");
             }
@@ -24,8 +25,25 @@ export default function OAuthButton({ settings, setSettings }: SettingsProp) {
     };
 
     const handleSignOut = () => {
-        // Remove the token from your extension state
-        setSettings((prev) => ({ ...prev, apiToken: "" }));
+        // Remove the token from Chrome storage
+        chrome.storage.local.remove("apiToken", () => {
+            if (chrome.runtime.lastError) {
+                console.error("Error removing token from storage:", chrome.runtime.lastError);
+            } else {
+                console.log("API token removed from storage.");
+            }
+        });
+
+        // Remove the token from extension state and clear any other data if needed
+        setSettings((prev) => ({
+            ...prev,
+            apiToken: "",
+            selectedTeam: undefined,
+            selectedSpace: undefined,
+            selectedFolder: undefined,
+            selectedList: undefined,
+            fieldMappings: undefined,
+        }));
     };
 
     // Show a loading animation if loading; otherwise show connect/sign-out based on apiToken

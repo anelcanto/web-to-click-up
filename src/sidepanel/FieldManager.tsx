@@ -1,28 +1,35 @@
-// src/assets/sidepanel/FieldManager.tsx
+// src/sidepanel/FieldManager.tsx
 import React, { useState, useMemo, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { Field } from '../components/RenderField'
-
+import { Field } from '../components/RenderField';
 
 interface FieldManagerProps {
     availableFields: Field[];
     initialSelectedFields: string[];
+    resetTrigger?: boolean; // New prop to trigger a reset
 }
-
 
 export interface FieldManagerRef {
     handleSave: () => Promise<{ finalIds: string[]; finalFields: Field[] }>;
 }
 
-
 const FieldManager = forwardRef<FieldManagerRef, FieldManagerProps>(({
     availableFields,
-    initialSelectedFields
+    initialSelectedFields,
+    resetTrigger,
 }, ref) => {
     const [selectedFields, setSelectedFields] = useState<string[]>(initialSelectedFields);
 
+    // When initialSelectedFields changes, update our state.
     useEffect(() => {
         setSelectedFields(initialSelectedFields);
     }, [initialSelectedFields]);
+
+    // If resetTrigger is true, clear the internal state
+    useEffect(() => {
+        if (resetTrigger) {
+            setSelectedFields([]);
+        }
+    }, [resetTrigger]);
 
     const sortedFields = useMemo(() => {
         return [...availableFields].sort((a, b) => a.name.localeCompare(b.name));
@@ -48,23 +55,6 @@ const FieldManager = forwardRef<FieldManagerRef, FieldManagerProps>(({
     useImperativeHandle(ref, () => ({
         handleSave
     }));
-
-    // function handleSave() {
-    //     const finalFields = selectedFields
-    //         .filter((id) => id.trim() !== '')
-    //         .map((id) => {
-    //             const field = availableFields.find((f) => f.id === id);
-    //             return field ? { ...field } : null;
-    //         })
-    //         .filter(Boolean) as Field[];
-
-    //     onSave(
-    //         finalFields.map((f) => f.id),
-    //         finalFields // Include options here
-    //     );
-    // }
-
-    // FieldManager.tsx
 
     const handleSave = () => {
         return new Promise<{ finalIds: string[], finalFields: Field[] }>((resolve) => {
@@ -117,14 +107,7 @@ const FieldManager = forwardRef<FieldManagerRef, FieldManagerProps>(({
                 >
                     Add Field
                 </button>
-                {/* Remove the Save button from here */}
-                {/* <button
-                    type="button"
-                    onClick={handleSave}
-                    className="flex-1 p-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-                >
-                    Save
-                </button> */}
+                {/* Save button removed */}
             </div>
         </div>
     );

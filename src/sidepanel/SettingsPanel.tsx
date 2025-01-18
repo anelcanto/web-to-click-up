@@ -129,7 +129,8 @@ export default function SettingsPanel({
                     ref={fieldManagerRef}
                     availableFields={combinedFields}
                     initialSelectedFields={selectedFieldIds}
-
+                    // When fieldMappings is undefined, resetTrigger becomes true
+                    resetTrigger={settings.fieldMappings === undefined}
                 />
             )}
 
