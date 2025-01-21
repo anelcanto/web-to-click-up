@@ -1,16 +1,16 @@
-// src/assets/sidepanel/SidePanel.tsx
+// src/sidepanel/SidePanel.tsx
 import React, { useState, useEffect } from 'react';
 import CreateTask from './CreateTask';
 import SettingsPanel from './SettingsPanel';
-import { Field } from '../components/RenderField'
-
+import { Field } from '../components/RenderField';
 
 export default function SidePanel() {
     const [isSettings, setIsSettings] = useState(false);
+    // Store selected fields as string IDs
     const [selectedFieldIds, setSelectedFieldIds] = useState<string[]>([]);
     const [availableFields, setAvailableFields] = useState<Field[]>([]);
 
-    // Load selected fields and availableFields from storage.local on mount
+    // Load stored values from chrome storage on mount
     useEffect(() => {
         chrome.storage.local.get(['selectedFieldIds', 'availableFields'], (items) => {
             if (items.selectedFieldIds) {
@@ -22,7 +22,7 @@ export default function SidePanel() {
         });
     }, []);
 
-    // Function to update selected fields and available fields
+    // Function to update fields (both selectedFieldIds and availableFields)
     const updateFields = (newSelectedFieldIds: string[], newAvailableFields: Field[]) => {
         setSelectedFieldIds(newSelectedFieldIds);
         setAvailableFields(newAvailableFields);
@@ -36,6 +36,7 @@ export default function SidePanel() {
                     selectedFieldIds={selectedFieldIds}
                     availableFields={availableFields}
                     updateFields={updateFields}
+                    setSelectedFieldIds={setSelectedFieldIds}
                 />
             ) : (
                 <CreateTask

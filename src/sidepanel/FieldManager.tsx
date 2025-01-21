@@ -1,11 +1,12 @@
 // src/sidepanel/FieldManager.tsx
-import React, { useState, useMemo, useEffect, forwardRef, useImperativeHandle } from 'react';
+import React, { useMemo, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { Field } from '../components/RenderField';
 
-interface FieldManagerProps {
+export interface FieldManagerProps {
     availableFields: Field[];
-    initialSelectedFields: string[];
-    resetTrigger?: boolean; // New prop to trigger a reset
+    selectedFields: string[]; // should be a list of field IDs (strings)
+    setSelectedFields: React.Dispatch<React.SetStateAction<string[]>>;
+    resetTrigger?: boolean; // Optional prop to trigger a reset
 }
 
 export interface FieldManagerRef {
@@ -14,31 +15,28 @@ export interface FieldManagerRef {
 
 const FieldManager = forwardRef<FieldManagerRef, FieldManagerProps>(({
     availableFields,
-    initialSelectedFields,
+    selectedFields,
+    setSelectedFields,
     resetTrigger,
 }, ref) => {
-    const [selectedFields, setSelectedFields] = useState<string[]>(initialSelectedFields);
-
-    // When initialSelectedFields changes, update our state.
-    useEffect(() => {
-        setSelectedFields(initialSelectedFields);
-    }, [initialSelectedFields]);
-
-    // If resetTrigger is true, clear the internal state
+    // Reset selectedFields state when resetTrigger is activated.
     useEffect(() => {
         if (resetTrigger) {
             setSelectedFields([]);
         }
-    }, [resetTrigger]);
+    }, [resetTrigger, setSelectedFields]);
 
+    // Sort fields alphabetically based on name.
     const sortedFields = useMemo(() => {
         return [...availableFields].sort((a, b) => a.name.localeCompare(b.name));
     }, [availableFields]);
 
+    // Add an empty field entry.
     function handleAddField() {
         setSelectedFields((prev) => [...prev, '']);
     }
 
+    // Update a field's value.
     function handleFieldChange(index: number, newValue: string) {
         setSelectedFields((prev) => {
             const copy = [...prev];
@@ -47,24 +45,26 @@ const FieldManager = forwardRef<FieldManagerRef, FieldManagerProps>(({
         });
     }
 
+    // Remove a field from the selection.
     function handleRemoveField(index: number) {
         setSelectedFields((prev) => prev.filter((_, i) => i !== index));
     }
 
-    // Expose handleSave method to parent via ref
+    // Expose the handleSave function to the parent via ref.
     useImperativeHandle(ref, () => ({
         handleSave
     }));
 
-    const handleSave = () => {
-        return new Promise<{ finalIds: string[], finalFields: Field[] }>((resolve) => {
+    // Compile final field information.
+    const handleSave = (): Promise<{ finalIds: string[]; finalFields: Field[] }> => {
+        return new Promise((resolve) => {
             const finalFields = selectedFields
                 .filter(id => id.trim() !== '')
                 .map(id => {
                     const field = availableFields.find(f => f.id === id);
                     return field ? { ...field } : null;
                 })
-                .filter(Boolean) as Field[];
+                .filter((f): f is Field => Boolean(f));
             resolve({
                 finalIds: finalFields.map(f => f.id),
                 finalFields,
@@ -107,7 +107,6 @@ const FieldManager = forwardRef<FieldManagerRef, FieldManagerProps>(({
                 >
                     Add Field
                 </button>
-                {/* Save button removed */}
             </div>
         </div>
     );

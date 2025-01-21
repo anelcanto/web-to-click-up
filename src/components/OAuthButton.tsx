@@ -1,12 +1,14 @@
+// src/components/OAuthButton.tsx
 import React, { useState } from "react";
 import { Settings } from "../types";
 
-interface SettingsProp {
+interface OAuthButtonProps {
     settings: Settings;
     setSettings: React.Dispatch<React.SetStateAction<Settings>>;
+    clearSelectedFields: () => void; // New prop to clear selected fields
 }
 
-export default function OAuthButton({ settings, setSettings }: SettingsProp) {
+export default function OAuthButton({ settings, setSettings, clearSelectedFields }: OAuthButtonProps) {
     const [isLoading, setIsLoading] = useState(false);
 
     const handleConnectClickup = () => {
@@ -16,7 +18,9 @@ export default function OAuthButton({ settings, setSettings }: SettingsProp) {
                 console.log("OAuth successful! Access token:", response.accessToken);
                 // Save the token in your extension state and Chrome storage
                 setSettings((prev) => ({ ...prev, apiToken: response.accessToken }));
-                chrome.storage.local.set({ apiToken: response.accessToken });
+                chrome.storage.local.set({ apiToken: response.accessToken }, () => {
+                    console.log("Access token saved.");
+                });
             } else {
                 console.error("OAuth failed:", response ? response.error : "No response");
             }
@@ -25,28 +29,40 @@ export default function OAuthButton({ settings, setSettings }: SettingsProp) {
     };
 
     const handleSignOut = () => {
-        // Remove the token from Chrome storage
-        chrome.storage.local.remove("apiToken", () => {
-            if (chrome.runtime.lastError) {
-                console.error("Error removing token from storage:", chrome.runtime.lastError);
-            } else {
-                console.log("API token removed from storage.");
+        setIsLoading(true);
+        // Remove stored settings related to ClickUp, including the token and other keys
+        chrome.storage.local.remove(
+            [
+                "apiToken",
+                "selectedTeam",
+                "selectedSpace",
+                "selectedFolder",
+                "selectedList",
+                "fieldMappings",
+                "selectedFieldIds"  // Also clear the selected fields from storage if stored
+            ],
+            () => {
+                if (chrome.runtime.lastError) {
+                    console.error("Error removing keys from storage:", chrome.runtime.lastError);
+                } else {
+                    console.log("Token, settings, and selected fields removed from storage.");
+                }
+                // Clear settings in memory.
+                setSettings({
+                    apiToken: "",
+                    selectedTeam: "",
+                    selectedSpace: "",
+                    selectedFolder: null,
+                    selectedList: "",
+                    fieldMappings: {},
+                });
+                // Also clear the selected field IDs using the passed in callback.
+                clearSelectedFields();
+                setIsLoading(false);
             }
-        });
-
-        // Remove the token from extension state and clear any other data if needed
-        setSettings((prev) => ({
-            ...prev,
-            apiToken: "",
-            selectedTeam: undefined,
-            selectedSpace: undefined,
-            selectedFolder: undefined,
-            selectedList: undefined,
-            fieldMappings: undefined,
-        }));
+        );
     };
 
-    // Show a loading animation if loading; otherwise show connect/sign-out based on apiToken
     if (isLoading) {
         return (
             <div className="flex items-center justify-center mb-2">
@@ -58,7 +74,6 @@ export default function OAuthButton({ settings, setSettings }: SettingsProp) {
     return (
         <div className="flex items-center space-x-2 mb-2">
             {settings.apiToken ? (
-                // Render a sign out button if token exists
                 <button
                     onClick={handleSignOut}
                     className="w-full p-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
@@ -66,7 +81,6 @@ export default function OAuthButton({ settings, setSettings }: SettingsProp) {
                     Sign Out of ClickUp
                 </button>
             ) : (
-                // Else, render the connect button.
                 <button
                     onClick={handleConnectClickup}
                     className="w-full p-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
