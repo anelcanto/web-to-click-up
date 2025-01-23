@@ -5,6 +5,8 @@ import { Field } from '../components/RenderField';
 import LocationSelectors from '../components/LocationSelectors';
 import { Settings } from '../types';
 import OAuthButton from '../components/OAuthButton';
+import useDebounce from '../hooks/useDebounce';
+import AutoSaveStatus from '../components/AutoSaveStatus';
 
 interface SettingsPanelProps {
     onGoToCreateTask: () => void;
@@ -32,6 +34,7 @@ export default function SettingsPanel({
 
     const [settingsStatus, setSettingsStatus] = useState('');
     const fieldManagerRef = useRef<FieldManagerRef>(null);
+    const isFirstRender = useRef(true);
 
     useEffect(() => {
         chrome.storage.local.get(
@@ -51,54 +54,87 @@ export default function SettingsPanel({
 
     const standardFields: Field[] = [
         { id: 'taskDescription', name: 'Task Description' },
-        // Additional standard fields here...
     ];
-
     const combinedFields: Field[] = [...standardFields, ...availableFields];
 
-    async function saveSettings() {
-        let finalIds = selectedFieldIds;
-        let finalFields = availableFields;
+    const [isSyncing, setSyncStatus] = useState(false);
 
-        if (fieldManagerRef.current?.handleSave) {
-            const { finalIds: ids, finalFields: fields } = await fieldManagerRef.current.handleSave();
-            updateFields(ids, fields);
-            finalIds = ids;
-            finalFields = fields;
+
+
+    const DEBOUNCE_DELAY = 1000; // 1 second
+    const debouncedSettings = useDebounce(settings, DEBOUNCE_DELAY);
+
+    const MIN_DISPLAY_TIME = 1000; // 1 second
+    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return; // Skip the first render
         }
 
-        chrome.storage.local.set(
-            {
-                apiToken: settings.apiToken,
-                selectedTeam: settings.selectedTeam,
-                selectedSpace: settings.selectedSpace,
-                selectedFolder: settings.selectedFolder,
-                selectedList: settings.selectedList,
-                fieldMappings: settings.fieldMappings,
-                selectedFieldIds: finalIds,
-                availableFields: finalFields.map((field) => ({
-                    id: field.id,
-                    name: field.name,
-                    type: field.type || 'text',
-                    options:
-                        field.type === 'drop_down'
-                            ? field.options?.map((opt) => ({ id: opt.id, name: opt.name }))
-                            : undefined,
-                })),
-            },
-            () => {
-                if (chrome.runtime.lastError) {
-                    console.error('Error saving settings:', chrome.runtime.lastError);
-                } else {
-                    setSettingsStatus('Settings saved.');
-                }
+        saveSettings();
+
+        async function saveSettings() {
+            setSyncStatus(true); // Start syncing
+            console.log("Saving settings.. ")
+            let finalIds = selectedFieldIds;
+            let finalFields = availableFields;
+
+            if (fieldManagerRef.current?.handleSave) {
+                const { finalIds: ids, finalFields: fields } = await fieldManagerRef.current.handleSave();
+                updateFields(ids, fields);
+                finalIds = ids;
+                finalFields = fields;
             }
-        );
-    }
+
+            chrome.storage.local.set(
+                {
+                    apiToken: settings.apiToken,
+                    selectedTeam: settings.selectedTeam,
+                    selectedSpace: settings.selectedSpace,
+                    selectedFolder: settings.selectedFolder,
+                    selectedList: settings.selectedList,
+                    fieldMappings: settings.fieldMappings,
+                    selectedFieldIds: finalIds,
+                    availableFields: finalFields.map((field) => ({
+                        id: field.id,
+                        name: field.name,
+                        type: field.type || 'text',
+                        options:
+                            field.type === 'drop_down'
+                                ? field.options?.map((opt) => ({ id: opt.id, name: opt.name }))
+                                : undefined,
+                    })),
+                },
+                () => {
+                    if (chrome.runtime.lastError) {
+                        console.error('Error saving settings:', chrome.runtime.lastError);
+                    }
+                    //  else {
+                    //     setSettingsStatus('Settings saved.');
+                    // }
+
+                    // Switch sync animation after a delay
+                    setTimeout(() => {
+                        setSyncStatus(false); // End syncing
+                        // setSettingsStatus(''); // Clear the status message
+                    }, 2000);
+                }
+            );
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [debouncedSettings, selectedFieldIds]);
 
     return (
-        <div className="p-4 w-72 font-sans">
+
+        <div className="relative p-4 w-72 font-sans">
+
+
+            <AutoSaveStatus
+                isSyncing={isSyncing}
+                className={"absolute top-0 right-3"}
+            />
             <h3 className="text-lg font-bold mb-4">Settings</h3>
+
             <OAuthButton
                 settings={settings}
                 setSettings={setSettings}
@@ -120,12 +156,7 @@ export default function SettingsPanel({
                 />
             )}
 
-            <button
-                onClick={saveSettings}
-                className="w-full mb-2 p-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-            >
-                Save Settings
-            </button>
+
             <p className="text-sm text-gray-700">{settingsStatus}</p>
 
             <hr className="my-4" />
