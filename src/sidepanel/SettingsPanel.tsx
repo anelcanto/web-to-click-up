@@ -32,7 +32,7 @@ export default function SettingsPanel({
         fieldMappings: {},
     });
 
-    const [settingsStatus, setSettingsStatus] = useState('');
+    // const [settingsStatus, setSettingsStatus] = useState('');
     const fieldManagerRef = useRef<FieldManagerRef>(null);
     const isFirstRender = useRef(true);
 
@@ -64,7 +64,7 @@ export default function SettingsPanel({
     const DEBOUNCE_DELAY = 1000; // 1 second
     const debouncedSettings = useDebounce(settings, DEBOUNCE_DELAY);
 
-    const MIN_DISPLAY_TIME = 1000; // 1 second
+    // const MIN_DISPLAY_TIME = 1000; // 1 second
     useEffect(() => {
         if (isFirstRender.current) {
             isFirstRender.current = false;
@@ -157,7 +157,7 @@ export default function SettingsPanel({
             )}
 
 
-            <p className="text-sm text-gray-700">{settingsStatus}</p>
+            {/* <p className="text-sm text-gray-700">{settingsStatus}</p> */}
 
             <hr className="my-4" />
 
