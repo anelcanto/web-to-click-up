@@ -5,6 +5,7 @@ interface FieldOption {
     id: string;
     name: string;
 }
+
 interface CustomField {
     id: string; // Unique identifier of the custom field
     name: string; // Name of the custom field
@@ -169,8 +170,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         console.log("Reloading extension..")
         chrome.runtime.reload();
     }
-    sendResponse({ success: true });
-    return true;
+    if (!message.action) {
+        sendResponse({ success: false, error: 'Unknown action.' });
+    }
 });
 
 // Set the side panel behavior to open on action click
