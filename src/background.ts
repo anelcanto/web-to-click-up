@@ -164,9 +164,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         // Indicate that the response will be sent asynchronously
         return true;
     }
+
+    if (message.action === "reloadExtension") {
+        console.log("Reloading extension..")
+        chrome.runtime.reload();
+    }
+    sendResponse({ success: true });
+    return true;
 });
 
 // Set the side panel behavior to open on action click
 chrome.sidePanel
     .setPanelBehavior({ openPanelOnActionClick: true })
     .catch((error) => console.error(error));
+

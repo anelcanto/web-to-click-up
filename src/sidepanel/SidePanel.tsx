@@ -28,8 +28,18 @@ export default function SidePanel() {
         setAvailableFields(newAvailableFields);
     };
 
+    function reloadExtension() {
+        chrome.runtime.sendMessage({ action: 'reloadExtension' })
+    }
+
     return (
         <div>
+            <button
+                onClick={reloadExtension}
+                className="w-full mb-2 p-2  text-gray rounded hover:bg-blue-700 transition"
+            >
+                Reload extension
+            </button>
             {isSettings ? (
                 <SettingsPanel
                     onGoToCreateTask={() => setIsSettings(false)}
