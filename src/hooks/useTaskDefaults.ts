@@ -85,6 +85,7 @@ const useTaskDefaults = () => {
         statusMsg,
         saveDefaults,
         clearDefaults,
+        loadDefaults
     };
 };
 

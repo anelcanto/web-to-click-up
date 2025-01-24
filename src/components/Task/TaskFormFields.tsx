@@ -1,6 +1,6 @@
 // src/components/TaskFormFields.tsx
 import React from 'react';
-import { RenderField, Field } from '../components/RenderField';
+import { RenderField, Field } from '../RenderField';
 
 interface TaskFormFieldsProps {
     taskName: string;

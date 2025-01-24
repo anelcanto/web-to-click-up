@@ -1,7 +1,7 @@
 // src/sidepanel/CreateTask.tsx
 import useTaskDefaults from '../hooks/useTaskDefaults';
-import TaskFormFields from '../components/TaskFormFields';
-import TaskActions from '../components/TaskActions';
+import TaskFormFields from '../components/Task/TaskFormFields'
+import TaskActions from '../components/Task/TaskActions';
 import StatusMessage from '../components/StatusMessage';
 import { Field } from '../components/RenderField';
 
@@ -23,6 +23,7 @@ export default function CreateTask({ onGoToSettings, selectedFieldIds, available
         statusMsg,
         saveDefaults,
         clearDefaults,
+        loadDefaults
     } = useTaskDefaults();
 
     // Define standard fields
@@ -122,14 +123,14 @@ export default function CreateTask({ onGoToSettings, selectedFieldIds, available
                     setTaskName('');
                     setFieldValues({});
                     setFieldUrlOptions({});
-                    // Reload defaults if necessary
-                    // loadDefaults(); // Already handled in custom hook
+                    loadDefaults();
                 } else {
                     const err = response?.error || 'Unknown error';
                     // setStatusMsg(`Error: ${err}`);
                     console.error('[CreateTask] Task creation error:', err);
                 }
             }
+
         );
     };
 
@@ -147,6 +148,7 @@ export default function CreateTask({ onGoToSettings, selectedFieldIds, available
                     fieldUrlOptions={fieldUrlOptions}
                     handleUrlOptionChange={handleUrlOptionChange}
                 />
+
                 <button
                     type="submit"
                     className="w-full p-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
@@ -155,7 +157,10 @@ export default function CreateTask({ onGoToSettings, selectedFieldIds, available
                 </button>
             </form>
 
-            <TaskActions saveDefaults={saveDefaults} clearDefaults={clearDefaults} />
+            <TaskActions
+                saveDefaults={saveDefaults}
+                clearDefaults={clearDefaults}
+            />
 
             <StatusMessage message={statusMsg} />
 
