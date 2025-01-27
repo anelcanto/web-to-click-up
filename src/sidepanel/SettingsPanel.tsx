@@ -17,7 +17,7 @@ interface SettingsPanelProps {
 }
 
 export default function SettingsPanel({
-    onGoToCreateTask,
+    // onGoToCreateTask,
     selectedFieldIds,
     availableFields,
     updateFields,

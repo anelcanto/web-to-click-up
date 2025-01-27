@@ -11,7 +11,9 @@ interface CreateTaskProps {
     availableFields: Field[];
 }
 
-export default function CreateTask({ onGoToSettings, selectedFieldIds, availableFields }: CreateTaskProps) {
+// export default function CreateTask({ onGoToSettings, selectedFieldIds, availableFields }: CreateTaskProps) {
+export default function CreateTask({ selectedFieldIds, availableFields }: CreateTaskProps) {
+
     // Use the custom hook to manage defaults
     const {
         taskName,
