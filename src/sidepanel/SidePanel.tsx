@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import CreateTask from './CreateTask';
 import SettingsPanel from './SettingsPanel';
 import { Field } from '../components/RenderField';
+import NavButton from '../components/NavButton';
 
 export default function SidePanel() {
     const [isSettings, setIsSettings] = useState(false);
@@ -40,6 +41,13 @@ export default function SidePanel() {
             >
                 Reload extension
             </button>
+
+            <NavButton
+                label={isSettings ? 'Back to Create Task' : 'Settings'}
+                icon={isSettings ? 'back' : 'settings'}
+                onClick={() => setIsSettings((prev) => !prev)}
+            />
+
             {isSettings ? (
                 <SettingsPanel
                     onGoToCreateTask={() => setIsSettings(false)}

@@ -1,6 +1,6 @@
 // src/sidepanel/SettingsPanel.tsx
 import React, { useEffect, useState, useRef } from 'react';
-import FieldManager, { FieldManagerRef } from './FieldManager';
+import FieldManager, { FieldManagerRef } from '../components/FieldManager';
 import { Field } from '../components/RenderField';
 import LocationSelectors from '../components/LocationSelectors';
 import { Settings } from '../types';
@@ -161,12 +161,12 @@ export default function SettingsPanel({
 
             <hr className="my-4" />
 
-            <button
+            {/* <button
                 onClick={onGoToCreateTask}
                 className="w-full p-2 text-blue-700 underline hover:text-blue-900"
             >
                 Back to Create Task
-            </button>
+            </button> */}
         </div>
     );
 }

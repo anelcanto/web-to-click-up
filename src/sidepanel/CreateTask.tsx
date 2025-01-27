@@ -165,12 +165,12 @@ export default function CreateTask({ onGoToSettings, selectedFieldIds, available
             <StatusMessage message={statusMsg} />
 
             <hr className="my-4" />
-            <button
+            {/* <button
                 onClick={onGoToSettings}
                 className="w-full p-2 text-blue-700 underline hover:text-blue-900"
             >
                 Settings
-            </button>
+            </button> */}
         </div>
     );
 }
